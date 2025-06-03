@@ -62,23 +62,9 @@ export default function LoginPage() {
         description: "Welcome back!",
       });
       
-      // RBAC Placeholder: In a real app, you would fetch the user's role here
-      // from a 'user_profiles' or 'user_roles' table in Supabase.
-      // const { data: { user } } = await supabase.auth.getUser();
-      // if (user) {
-      //   const { data: profile, error: profileError } = await supabase
-      //     .from('profiles') // Replace with your actual table name
-      //     .select('role')
-      //     .eq('id', user.id)
-      //     .single();
-      //   if (profileError) { /* handle error */ }
-      //   const role = profile?.role; // e.g., 'admin', 'staff'
-      //   if (role === 'admin') router.push('/'); else router.push('/'); 
-      // } else { /* handle no user found after login - unlikely */ }
-
-      const nextUrl = searchParams.get('next') || '/'; // Redirect to intended page or dashboard
+      const nextUrl = searchParams.get('next') || '/'; 
       router.push(nextUrl);
-      router.refresh(); // Important to update server-side session state for middleware
+      router.refresh(); 
     }
   };
 
@@ -92,7 +78,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form method="POST" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {error && (
                 <div className="flex items-center p-3 text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md">
                   <AlertCircle className="mr-2 h-4 w-4" />
