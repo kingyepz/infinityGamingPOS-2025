@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Users, Gamepad2, MessageSquare, Bot } from 'lucide-react';
+import { LayoutDashboard, Users, Gamepad2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -29,9 +29,9 @@ export function AppSidebar() {
     <>
       <SidebarHeader className="p-4">
         <Link href="/" className="flex items-center gap-2">
-          <Bot className="h-8 w-8 text-primary" />
+          <Gamepad2 className="h-8 w-8 text-primary" />
           {state === 'expanded' && (
-            <h1 className="text-xl font-headline font-semibold text-sidebar-foreground">Infinity POS</h1>
+            <h1 className="text-xl font-headline font-semibold text-sidebar-foreground">Infinity Gaming Lounge POS System</h1>
           )}
         </Link>
       </SidebarHeader>
