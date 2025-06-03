@@ -3,7 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Users, Gamepad2, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DollarSign, Users, Gamepad2, Clock, LogOut } from "lucide-react";
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 interface DashboardStat {
@@ -43,8 +44,20 @@ export default function DashboardPage() {
     ]);
   }, []);
 
+  const handleLogout = () => {
+    // Placeholder for actual logout logic with Supabase
+    alert("Log Out button clicked. Implement Supabase logout here.");
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold font-headline">Dashboard Overview</h1>
+        <Button variant="outline" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" /> Log Out
+        </Button>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {dashboardData.map((stat) => (
           <DashboardCard key={stat.title} {...stat} />
