@@ -1,29 +1,68 @@
 
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-// This function can be marked `async` if using `await` inside
-export function middleware(request: NextRequest) {
-  // Placeholder: In a real app, you'd check for a valid session cookie from Supabase
-  const isAuthenticated = request.cookies.has('supabase-auth-token'); // Example cookie name
-  const { pathname } = request.nextUrl;
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
-  // If trying to access any page other than login or auth-related pages, and not authenticated, redirect to login
-  if (!isAuthenticated && !pathname.startsWith('/login') && !pathname.startsWith('/forgot-password') && !pathname.startsWith('/api/auth')) {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // If the cookie is set, update the response
+          // so the new cookie is set on the browser
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          // If the cookie is removed, update the response
+          // so the cookie is removed from the browser
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
+
+  const { data: { session } } = await supabase.auth.getSession()
+  const { pathname } = request.nextUrl
+
+  const isAuthenticated = !!session
+
+  // Define auth-related pages
+  const authPages = ['/login', '/forgot-password', '/reset-password'] // Add /reset-password if you create it
+
+  // If user is not authenticated and trying to access a protected page
+  if (!isAuthenticated && !authPages.includes(pathname) && !pathname.startsWith('/api/auth')) {
     const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('next', pathname) // Optionally redirect back after login
     return NextResponse.redirect(loginUrl)
   }
 
-  // If authenticated and trying to access login page, redirect to dashboard
-  if (isAuthenticated && pathname.startsWith('/login')) {
-    const dashboardUrl = new URL('/', request.url) // Assuming '/' is your main dashboard
+  // If user is authenticated and trying to access an auth page
+  if (isAuthenticated && authPages.includes(pathname)) {
+    const dashboardUrl = new URL('/', request.url) // Redirect to main dashboard
     return NextResponse.redirect(dashboardUrl)
   }
 
-  return NextResponse.next()
+  return response
 }
 
-// See "Matching Paths" below to learn more
 export const config = {
   matcher: [
     /*

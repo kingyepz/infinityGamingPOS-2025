@@ -2,20 +2,18 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Gamepad2, Loader2 } from "lucide-react"; // Using Gamepad2 as a placeholder logo
+import { Gamepad2, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// TODO: Import your Supabase client (e.g., import { supabase } from '@/lib/supabase';)
+import { createClient } from '@/lib/supabase/client';
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -26,8 +24,11 @@ type LoginFormValues = z.infer<typeof loginFormSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const supabase = createClient();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -39,105 +40,77 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    // Placeholder for Supabase authentication
-    try {
-      // const { data: authData, error } = await supabase.auth.signInWithPassword({
-      //   email: data.email,
-      //   password: data.password,
-      // });
+    setError(null);
+    
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    });
 
-      // Simulating API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const mockAuthSuccess = true; // Simulate success/failure
-      const mockError = null; // Simulate error
+    setIsLoading(false);
 
-      if (mockError) {
-      // if (error) {
-        // toast({
-        //   title: "Login Failed",
-        //   description: error.message || "Invalid credentials. Please try again.",
-        //   variant: "destructive",
-        // });
-        toast({
-          title: "Login Failed",
-          description: "Mock: Invalid credentials. Please try again.",
-          variant: "destructive",
-        });
-      } else if (mockAuthSuccess) {
-      // } else if (authData?.user) {
-        toast({
-          title: "Login Successful",
-          description: "Mock: Welcome back!",
-        });
-        
-        // Placeholder for RBAC: Fetch role and redirect
-        // const userId = authData.user.id;
-        // const { data: userData, error: userError } = await supabase
-        //   .from('your_user_roles_table') // Replace with your actual table name
-        //   .select('role')
-        //   .eq('user_id', userId)
-        //   .single();
-
-        // if (userError) {
-        //   toast({ title: "Error fetching user role", description: userError.message, variant: "destructive" });
-        //   setIsLoading(false);
-        //   // Optionally log out the user if role cannot be fetched
-        //   // await supabase.auth.signOut();
-        //   return;
-        // }
-        
-        // const role = userData?.role;
-        const mockRole = 'admin'; // Simulate role fetching
-
-        // if (role === 'admin') {
-        //   router.push('/admin/dashboard'); // Adjust to your admin dashboard route
-        // } else if (role === 'staff') {
-        //   router.push('/staff/dashboard'); // Adjust to your staff dashboard route
-        // } else {
-        //   router.push('/'); // Default redirect
-        // }
-        if (mockRole === 'admin') {
-           router.push('/'); // For now, redirect to main dashboard
-        } else {
-           router.push('/');
-        }
-
-      }
-    } catch (err) {
-      console.error("Login error:", err);
+    if (signInError) {
+      setError(signInError.message || "Invalid credentials. Please try again.");
       toast({
-        title: "An Unexpected Error Occurred",
-        description: "Please try again later.",
+        title: "Login Failed",
+        description: signInError.message || "Invalid credentials. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+    } else {
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+      });
+      
+      // RBAC Placeholder: In a real app, you would fetch the user's role here
+      // from a 'user_profiles' or 'user_roles' table in Supabase.
+      // const { data: { user } } = await supabase.auth.getUser();
+      // if (user) {
+      //   const { data: profile, error: profileError } = await supabase
+      //     .from('profiles') // Replace with your actual table name
+      //     .select('role')
+      //     .eq('id', user.id)
+      //     .single();
+      //   if (profileError) { /* handle error */ }
+      //   const role = profile?.role; // e.g., 'admin', 'staff'
+      //   if (role === 'admin') router.push('/'); else router.push('/'); 
+      // } else { /* handle no user found after login - unlikely */ }
+
+      const nextUrl = searchParams.get('next') || '/'; // Redirect to intended page or dashboard
+      router.push(nextUrl);
+      router.refresh(); // Important to update server-side session state for middleware
     }
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-2xl">
+      <Card className="w-full max-w-md shadow-2xl bg-card/80 backdrop-blur-sm border-border/50">
         <CardHeader className="items-center text-center">
           <Gamepad2 className="h-16 w-16 text-primary mb-4" />
-          <CardTitle className="text-3xl font-headline">Infinity Gaming Lounge</CardTitle>
-          <CardDescription>Secure Login to POS System</CardDescription>
+          <CardTitle className="text-3xl font-headline text-primary-foreground">Infinity Gaming Lounge</CardTitle>
+          <CardDescription className="text-muted-foreground">Secure Login to POS System</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {error && (
+                <div className="flex items-center p-3 text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md">
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  {error}
+                </div>
+              )}
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <FormLabel className="text-foreground/80">Email Address</FormLabel>
                     <FormControl>
                       <Input 
                         type="email" 
                         placeholder="e.g., staff@infinitygaming.co.ke" 
                         {...field} 
-                        className="bg-input text-foreground placeholder:text-muted-foreground"
+                        className="bg-input/70 text-foreground placeholder:text-muted-foreground/70 border-border/50"
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -150,13 +123,13 @@ export default function LoginPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel className="text-foreground/80">Password</FormLabel>
                     <FormControl>
                       <Input 
                         type="password" 
                         placeholder="Enter your password" 
                         {...field} 
-                        className="bg-input text-foreground placeholder:text-muted-foreground"
+                        className="bg-input/70 text-foreground placeholder:text-muted-foreground/70 border-border/50"
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -164,7 +137,7 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -177,9 +150,9 @@ export default function LoginPage() {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col items-center space-y-2">
+        <CardFooter className="flex flex-col items-center space-y-3 pt-4">
            <Link href="/forgot-password" passHref legacyBehavior>
-            <a className="text-sm text-primary hover:underline">
+            <a className="text-sm text-primary hover:underline hover:text-accent transition-colors">
               Forgot Password?
             </a>
           </Link>
