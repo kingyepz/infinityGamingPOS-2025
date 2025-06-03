@@ -27,7 +27,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null); // Renamed to avoid conflict with 'error' from signIn
   const supabase = createClient();
 
   const form = useForm<LoginFormValues>({
@@ -40,31 +40,88 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    setError(null);
+    setFormError(null);
     
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
     });
 
-    setIsLoading(false);
-
     if (signInError) {
-      setError(signInError.message || "Invalid credentials. Please try again.");
+      setIsLoading(false);
+      setFormError(signInError.message || "Invalid credentials. Please try again.");
       toast({
         title: "Login Failed",
         description: signInError.message || "Invalid credentials. Please try again.",
         variant: "destructive",
       });
+      return;
+    }
+
+    if (authData.user) {
+      try {
+        const { data: staffMember, error: staffError } = await supabase
+          .from('staff')
+          .select('role')
+          .eq('user_id', authData.user.id)
+          .single();
+
+        if (staffError || !staffMember) {
+          setIsLoading(false);
+          // If role fetch fails or no staff record, default to general dashboard
+          // You might want to log staffError for debugging
+          console.error("Error fetching staff role or staff member not found:", staffError);
+          toast({
+            title: "Login Successful (Role Not Found)",
+            description: "Redirecting to general dashboard.",
+          });
+          router.push('/dashboard');
+          router.refresh();
+          return;
+        }
+
+        let redirectPath = '/dashboard'; // Default redirect
+        switch (staffMember.role) {
+          case 'admin':
+            redirectPath = '/dashboard/admin';
+            break;
+          case 'cashier':
+            redirectPath = '/dashboard/cashier';
+            break;
+          // Add other roles and paths as needed
+          // default: // 'floor_staff' or any other role
+          //   redirectPath = '/dashboard';
+          //   break;
+        }
+        
+        toast({
+          title: "Login Successful",
+          description: `Welcome! Redirecting to your dashboard. Role: ${staffMember.role}`,
+        });
+        router.push(redirectPath);
+        router.refresh();
+
+      } catch (e) {
+        setIsLoading(false);
+        console.error("Error processing role:", e);
+        setFormError("Could not determine user role. Please contact support.");
+        toast({
+          title: "Role Check Failed",
+          description: "Could not determine user role. Redirecting to general dashboard.",
+          variant: "destructive",
+        });
+        router.push('/dashboard'); // Fallback redirect
+        router.refresh();
+      }
     } else {
+      // Should not happen if signInError is null, but as a safeguard
+      setIsLoading(false);
+      setFormError("Login failed. User data not found.");
       toast({
-        title: "Login Successful",
-        description: "Welcome back!",
+        title: "Login Failed",
+        description: "User data not found after successful authentication.",
+        variant: "destructive",
       });
-      
-      const nextUrl = searchParams.get('next') || '/dashboard'; 
-      router.push(nextUrl);
-      router.refresh(); 
     }
   };
 
@@ -79,10 +136,10 @@ export default function LoginPage() {
         <CardContent>
           <Form {...form}>
             <form method="POST" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {error && (
+              {formError && (
                 <div className="flex items-center p-3 text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-md">
                   <AlertCircle className="mr-2 h-4 w-4" />
-                  {error}
+                  {formError}
                 </div>
               )}
               <FormField

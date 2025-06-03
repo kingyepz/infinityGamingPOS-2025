@@ -11,18 +11,13 @@ import type { User } from '@supabase/supabase-js';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const getPageTitle = (pathname: string): string => {
-  if (pathname === '/dashboard' || pathname === '/') return 'Dashboard Overview';
+  if (pathname === '/dashboard') return 'Dashboard Overview';
+  if (pathname === '/dashboard/admin') return 'Admin Dashboard';
+  if (pathname === '/dashboard/cashier') return 'Cashier Dashboard';
   if (pathname.startsWith('/customers')) return 'Customer Management';
   if (pathname.startsWith('/sessions')) return 'Game Session Management';
-  if (pathname.startsWith('/payments')) return 'Payment Management';
-  if (pathname.startsWith('/receipts')) return 'Receipt Center';
-  if (pathname.startsWith('/inventory')) return 'Inventory Management';
-  if (pathname.startsWith('/tournaments')) return 'Tournament Management';
-  if (pathname.startsWith('/staff')) return 'Staff Management';
-  if (pathname.startsWith('/reports')) return 'Reports & Analytics';
-  if (pathname.startsWith('/settings')) return 'Settings';
   if (pathname.startsWith('/support')) return 'Customer Support Tickets';
-  return 'Infinity Gaming Lounge POS';
+  return 'Infinity Gaming Lounge POS'; // Default or for /
 };
 
 
@@ -30,41 +25,54 @@ export function AppHeader() {
   const pathname = usePathname();
   const title = getPageTitle(pathname);
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminByEmail, setIsAdminByEmail] = useState(false); // Based on NEXT_PUBLIC_ADMIN_EMAIL
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  // const [userRole, setUserRole] = useState<string | null>(null); // For future database role display
 
   useEffect(() => {
     const supabase = createClient();
-    const fetchUser = async () => {
+    const fetchUserAndRole = async () => {
       setIsLoadingUser(true);
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       setUser(currentUser);
-      if (currentUser && currentUser.email) {
+
+      if (currentUser) {
+        // Email-based admin check (visual cue)
         const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-        if (adminEmail && currentUser.email === adminEmail) {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
+        setIsAdminByEmail(!!adminEmail && currentUser.email === adminEmail);
+
+        // Fetch role from 'staff' table - uncomment and adapt if needed for header display
+        /*
+        const { data: staffMember, error } = await supabase
+          .from('staff')
+          .select('role')
+          .eq('user_id', currentUser.id)
+          .single();
+        if (staffMember) {
+          setUserRole(staffMember.role);
         }
+        if(error) console.error("Error fetching role for header:", error);
+        */
       } else {
-        setIsAdmin(false);
+        setIsAdminByEmail(false);
+        // setUserRole(null);
       }
       setIsLoadingUser(false);
     };
 
-    fetchUser();
+    fetchUserAndRole();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user && session.user.email) {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
         const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-        if (adminEmail && session.user.email === adminEmail) {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
+        setIsAdminByEmail(!!adminEmail && currentUser.email === adminEmail);
+        // Potentially re-fetch role here if it can change during a session
+        // fetchUserAndRole(); // Or a more specific role fetch
       } else {
-        setIsAdmin(false);
+        setIsAdminByEmail(false);
+        // setUserRole(null);
       }
     });
 
@@ -90,14 +98,15 @@ export function AppHeader() {
             <Avatar className="h-9 w-9">
               <AvatarImage src="https://placehold.co/100x100.png" alt={user.email || "User Avatar"} data-ai-hint="user avatar" />
               <AvatarFallback>
-                {isAdmin ? <ShieldCheck className="h-5 w-5" /> : <UserCircle className="h-5 w-5" />}
+                {isAdminByEmail ? <ShieldCheck className="h-5 w-5" /> : <UserCircle className="h-5 w-5" />}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col text-xs">
               <span className="font-medium text-foreground truncate max-w-[150px] sm:max-w-[200px]" title={user.email || ''}>
                 {user.email || 'User'}
               </span>
-              {isAdmin && <span className="text-primary font-semibold">Admin</span>}
+              {/* Display role from DB if fetched: {userRole && <span className="text-primary font-semibold">{userRole}</span>} */}
+              {isAdminByEmail && <span className="text-primary font-semibold">Admin (Email Match)</span>}
             </div>
           </>
         ) : (
