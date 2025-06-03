@@ -1,0 +1,61 @@
+
+"use client";
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import { LayoutDashboard, Users, Gamepad2, MessageSquare, Bot } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const navItems = [
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/customers', label: 'Customers', icon: Users },
+  { href: '/sessions', label: 'Game Sessions', icon: Gamepad2 },
+  { href: '/support', label: 'Support Tickets', icon: MessageSquare },
+];
+
+export function AppSidebar() {
+  const pathname = usePathname();
+  const { state } = useSidebar();
+
+  return (
+    <>
+      <SidebarHeader className="p-4">
+        <Link href="/" className="flex items-center gap-2">
+          <Bot className="h-8 w-8 text-primary" />
+          {state === 'expanded' && (
+            <h1 className="text-xl font-headline font-semibold text-sidebar-foreground">Infinity POS</h1>
+          )}
+        </Link>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarMenu>
+          {navItems.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <Link href={item.href} legacyBehavior passHref>
+                <SidebarMenuButton
+                  isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                  tooltip={{ children: item.label, className: "font-body" }}
+                  className="font-body"
+                >
+                  <item.icon className={cn(
+                    "h-5 w-5",
+                    (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))) ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/80 group-hover/menu-button:text-sidebar-accent-foreground"
+                   )} />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
+    </>
+  );
+}
