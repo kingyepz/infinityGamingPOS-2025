@@ -10,8 +10,16 @@ import { usePathname } from 'next/navigation';
 const getPageTitle = (pathname: string): string => {
   if (pathname === '/') return 'Dashboard Overview';
   if (pathname.startsWith('/customers')) return 'Customer Management';
-  if (pathname.startsWith('/sessions')) return 'Game Session Manager';
-  if (pathname.startsWith('/support')) return 'Customer Support Tickets';
+  if (pathname.startsWith('/sessions')) return 'Game Session Management';
+  if (pathname.startsWith('/payments')) return 'Payment Management';
+  if (pathname.startsWith('/receipts')) return 'Receipt Center';
+  if (pathname.startsWith('/inventory')) return 'Inventory Management';
+  if (pathname.startsWith('/tournaments')) return 'Tournament Management';
+  if (pathname.startsWith('/staff')) return 'Staff Management';
+  if (pathname.startsWith('/reports')) return 'Reports & Analytics';
+  if (pathname.startsWith('/settings')) return 'Settings';
+  // Fallback for any previous pages that might still be accessed or new ones not yet listed
+  if (pathname.startsWith('/support')) return 'Customer Support Tickets'; 
   return 'Infinity Gaming Lounge POS';
 };
 

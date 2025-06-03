@@ -11,14 +11,31 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Users, Gamepad2, MessageSquare } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Gamepad2, 
+  CreditCard,
+  Receipt,
+  Package,
+  Trophy,
+  UsersRound,
+  Settings,
+  BarChart3
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/customers', label: 'Customers', icon: Users },
   { href: '/sessions', label: 'Game Sessions', icon: Gamepad2 },
-  { href: '/support', label: 'Support Tickets', icon: MessageSquare },
+  { href: '/payments', label: 'Payments', icon: CreditCard },
+  { href: '/receipts', label: 'Receipt Center', icon: Receipt },
+  { href: '/inventory', label: 'Inventory', icon: Package },
+  { href: '/tournaments', label: 'Tournaments', icon: Trophy },
+  { href: '/staff', label: 'Staff', icon: UsersRound },
+  { href: '/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AppSidebar() {
