@@ -62,7 +62,7 @@ export default function LoginPage() {
         description: "Welcome back!",
       });
       
-      const nextUrl = searchParams.get('next') || '/'; 
+      const nextUrl = searchParams.get('next') || '/dashboard'; 
       router.push(nextUrl);
       router.refresh(); 
     }

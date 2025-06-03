@@ -18,8 +18,6 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          // If the cookie is set, update the response
-          // so the new cookie is set on the browser
           response.cookies.set({
             name,
             value,
@@ -27,8 +25,6 @@ export async function middleware(request: NextRequest) {
           })
         },
         remove(name: string, options: CookieOptions) {
-          // If the cookie is removed, update the response
-          // so the cookie is removed from the browser
           response.cookies.set({
             name,
             value: '',
@@ -44,21 +40,25 @@ export async function middleware(request: NextRequest) {
 
   const isAuthenticated = !!session
 
-  // Define auth-related pages
-  const authPages = ['/login', '/forgot-password', '/reset-password'] // Add /reset-password if you create it
+  const authPages = ['/login', '/forgot-password', '/reset-password'] 
 
-  // If user is not authenticated and trying to access a protected page
   if (!isAuthenticated && !authPages.includes(pathname) && !pathname.startsWith('/api/auth')) {
     const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('next', pathname) // Optionally redirect back after login
+    loginUrl.searchParams.set('next', pathname) 
     return NextResponse.redirect(loginUrl)
   }
 
-  // If user is authenticated and trying to access an auth page
   if (isAuthenticated && authPages.includes(pathname)) {
-    const dashboardUrl = new URL('/', request.url) // Redirect to main dashboard
+    const dashboardUrl = new URL('/dashboard', request.url) // Redirect to main dashboard
     return NextResponse.redirect(dashboardUrl)
   }
+  
+  // If user is authenticated and tries to access the bare root path `/`, redirect to `/dashboard`
+  if (isAuthenticated && pathname === '/') {
+    const dashboardUrl = new URL('/dashboard', request.url);
+    return NextResponse.redirect(dashboardUrl);
+  }
+
 
   return response
 }

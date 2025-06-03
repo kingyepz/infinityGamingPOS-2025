@@ -11,7 +11,7 @@ import type { User } from '@supabase/supabase-js';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const getPageTitle = (pathname: string): string => {
-  if (pathname === '/') return 'Dashboard Overview';
+  if (pathname === '/dashboard' || pathname === '/') return 'Dashboard Overview';
   if (pathname.startsWith('/customers')) return 'Customer Management';
   if (pathname.startsWith('/sessions')) return 'Game Session Management';
   if (pathname.startsWith('/payments')) return 'Payment Management';
@@ -66,7 +66,6 @@ export function AppHeader() {
       } else {
         setIsAdmin(false);
       }
-      // No need to set isLoadingUser here as it's mainly for initial load
     });
 
     return () => {
