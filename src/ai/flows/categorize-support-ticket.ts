@@ -1,8 +1,8 @@
-// use server'
+'use server';
 
 /**
  * @fileOverview This file defines a Genkit flow for categorizing customer support tickets.
- *
+ * 
  * - categorizeSupportTicket - A function that categorizes a support ticket.
  * - CategorizeSupportTicketInput - The input type for the categorizeSupportTicket function.
  * - CategorizeSupportTicketOutput - The output type for the categorizeSupportTicket function.
