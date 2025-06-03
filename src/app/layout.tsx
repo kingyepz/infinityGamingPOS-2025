@@ -1,14 +1,22 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
+// Remove direct import of Toaster
+// import { Toaster } from "@/components/ui/toaster"; 
 import { Inter as FontSans } from "next/font/google"
 import { cn } from "@/lib/utils"
- 
+import dynamic from 'next/dynamic'; // Import dynamic
+
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
 })
+
+// Dynamically import Toaster with ssr: false
+const DynamicToaster = dynamic(() => 
+  import('@/components/ui/toaster').then(mod => mod.Toaster), 
+  { ssr: false }
+);
 
 export const metadata: Metadata = {
   title: 'Infinity Gaming Lounge POS',
@@ -36,7 +44,7 @@ export default function RootLayout({
         )}
       >
         {children} 
-        <Toaster />
+        <DynamicToaster /> {/* Use the dynamically imported Toaster */}
       </body>
     </html>
   );
