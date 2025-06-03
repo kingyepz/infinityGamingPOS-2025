@@ -1,22 +1,14 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-// Remove direct import of Toaster
-// import { Toaster } from "@/components/ui/toaster"; 
 import { Inter as FontSans } from "next/font/google"
 import { cn } from "@/lib/utils"
-import dynamic from 'next/dynamic'; // Import dynamic
+import ClientToaster from '@/components/client-toaster'; // Import the new client component
 
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
 })
-
-// Dynamically import Toaster with ssr: false
-const DynamicToaster = dynamic(() => 
-  import('@/components/ui/toaster').then(mod => mod.Toaster), 
-  { ssr: false }
-);
 
 export const metadata: Metadata = {
   title: 'Infinity Gaming Lounge POS',
@@ -37,14 +29,14 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
       </head>
-      <body 
+      <body
         className={cn(
           "min-h-screen bg-background font-body antialiased",
           fontSans.variable
         )}
       >
-        {children} 
-        <DynamicToaster /> {/* Use the dynamically imported Toaster */}
+        {children}
+        <ClientToaster /> {/* Use the new client component */}
       </body>
     </html>
   );
