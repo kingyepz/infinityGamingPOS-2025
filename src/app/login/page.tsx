@@ -85,7 +85,7 @@ export default function LoginPage() {
           }
           setFormError("User role not configured. Please contact an administrator.");
           toast({
-            title: "Login Issue",
+            title: "Login Issue", // Changed title
             description: "Your account is valid, but role information is missing. Please contact an administrator.",
             variant: "destructive"
           });
@@ -100,14 +100,8 @@ export default function LoginPage() {
           case 'cashier':
             redirectPath = '/dashboard/cashier';
             break;
-          // Add other roles like 'floor_staff' if they have specific dashboards
-          // case 'floor_staff':
-          //   redirectPath = '/dashboard/floor'; // Example
-          //   break;
           default:
-            // For 'floor_staff' or any other roles not explicitly listed,
-            // they will go to the general /dashboard.
-            redirectPath = '/dashboard';
+            redirectPath = '/dashboard'; // For 'floor_staff' or any other roles
             break;
         }
         
@@ -129,9 +123,6 @@ export default function LoginPage() {
           description: `Could not determine user role. ${unknownError}`,
           variant: "destructive",
         });
-        // Potentially redirect to a generic dashboard or keep on login page with error
-        // router.push('/dashboard'); 
-        // router.refresh();
       }
     } else {
       setIsLoading(false);
@@ -231,3 +222,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
