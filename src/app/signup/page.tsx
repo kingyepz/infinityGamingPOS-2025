@@ -38,7 +38,7 @@ export default function SignUpPage() {
     },
   });
 
-  const onSubmit = async (formData: SignUpFormValues) => { // Renamed data to formData
+  const onSubmit = async (formData: SignUpFormValues) => {
     setIsLoading(true);
     setFormError(null);
     
@@ -61,46 +61,53 @@ export default function SignUpPage() {
       return;
     }
 
+    let staffRoleAssigned = false;
     if (signUpData.user) {
-      // User created in auth.users, now add to staff table with a default role
       const userId = signUpData.user.id;
-      const defaultRole = 'floor_staff'; // More secure default role
-
-      // Attempt to get full_name from email (basic split)
+      const defaultRole = 'floor_staff';
       const emailParts = formData.email.split('@');
       const fullNameGuess = emailParts[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-
       const { error: staffInsertError } = await supabase
-        .from('staff') // Using 'staff' table as per our existing setup
+        .from('staff')
         .insert([
-          { user_id: userId, role: defaultRole, full_name: fullNameGuess } // Assigning 'floor_staff'
+          { user_id: userId, role: defaultRole, full_name: fullNameGuess }
         ]);
 
       if (staffInsertError) {
-        // Log this error, but don't block the user from seeing the "confirm email" message
-        // as their auth account is already created.
         console.error('Error inserting default role into staff table:', staffInsertError);
+        setFormError("Account created, but initial role assignment failed. Please contact an administrator to complete your account setup.");
         toast({
-          title: "Account Created (Role Issue)",
-          description: "Your account was created, but there was an issue setting the default role. Please contact support if problems persist after email verification.",
-          variant: "destructive", // Or "warning"
+          title: "Sign Up Incomplete",
+          description: "Your account was created, but essential role information could not be set. Please contact an administrator before logging in.",
+          variant: "destructive",
+          duration: 10000, // Longer duration for this important message
         });
+        setIsLoading(false);
+        return; // Stop further processing, user should not proceed as if sign up is fully complete
       } else {
+        staffRoleAssigned = true;
         console.log(`Default role '${defaultRole}' assigned successfully to user ${userId}`);
       }
-    } else if (!signUpData.session && !signUpData.user) {
-      // This case means email confirmation is required.
-      // If user is null and session is null, sign up initiated, email sent.
-      // This is the expected flow for Supabase Auth with email confirmation.
+    }
+    
+    // If we reach here, auth.signUp was successful.
+    // isSubmitted will control showing the "check email" message.
+    setIsSubmitted(true);
+    setIsLoading(false);
+
+    let toastMessage = "Please check your email to confirm your account.";
+    if (staffRoleAssigned) {
+      toastMessage += " Your default role has been assigned."
+    } else if (signUpData.user === null && !signUpError) {
+      // This case means email confirmation required, and we couldn't assign role yet as user object wasn't available.
+      // User will need role assigned after confirming email & logging in for the first time (or admin does it).
+      toastMessage += " You will need your role configured after email confirmation."
     }
 
-
-    setIsLoading(false);
-    setIsSubmitted(true); // Show "check email" message
     toast({
-      title: "Sign Up Successful!",
-      description: "Please check your email to confirm your account.",
+      title: "Sign Up Initiated!",
+      description: toastMessage,
     });
   };
 
@@ -120,7 +127,7 @@ export default function SignUpPage() {
                 Verification Email Sent!
               </p>
               <p className="text-muted-foreground text-sm">
-                Please check your inbox (and spam folder) for the email address you provided. Click the link in the email to confirm your account.
+                Please check your inbox (and spam folder) for the email address you provided. Click the link in the email to confirm your account. If you had issues with role assignment, contact an admin.
               </p>
               <Button onClick={() => router.push('/login')} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Login
@@ -203,5 +210,4 @@ export default function SignUpPage() {
     </div>
   );
 }
-
     

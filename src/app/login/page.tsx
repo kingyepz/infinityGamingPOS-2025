@@ -38,7 +38,7 @@ export default function LoginPage() {
     },
   });
 
-  const onSubmit = async (formData: LoginFormValues) => { // Renamed data to formData
+  const onSubmit = async (formData: LoginFormValues) => {
     setIsLoading(true);
     setFormError(null);
     
@@ -49,7 +49,6 @@ export default function LoginPage() {
 
     if (signInError) {
       setIsLoading(false);
-      // Check if it's an email not confirmed error
       if (signInError.message.includes("Email not confirmed")) {
         setFormError("Please confirm your email address before logging in. Check your inbox for a confirmation link.");
         toast({
@@ -79,21 +78,16 @@ export default function LoginPage() {
         if (staffError || !staffMember) {
           setIsLoading(false);
           console.error("Error fetching staff role or staff member not found:", staffError);
-          // If no staff record, user might be valid but not staff.
-          // Redirect to a generic page or show specific message.
-          // For now, treating as potentially incomplete setup for this user.
           setFormError("User role not configured. Please contact an administrator.");
           toast({
-            title: "Login Successful (Role Missing)",
-            description: "Your account is valid, but role information is missing. Please contact support.",
+            title: "Login Issue", // Changed title
+            description: "Your account is valid, but role information is missing. Please contact an administrator.",
             variant: "destructive"
           });
-           // Optionally, sign them out if they MUST have a role to use the app
-           // await supabase.auth.signOut();
           return;
         }
 
-        let redirectPath = '/dashboard'; // Default redirect
+        let redirectPath = '/dashboard'; 
         switch (staffMember.role) {
           case 'admin':
             redirectPath = '/dashboard/admin';
@@ -101,20 +95,15 @@ export default function LoginPage() {
           case 'cashier':
             redirectPath = '/dashboard/cashier';
             break;
-          // Add other roles and paths as needed
-          // default: // 'floor_staff' or any other role
-          //   redirectPath = '/dashboard'; // Or a specific dashboard for 'floor_staff'
-          //   break;
         }
         
         toast({
           title: "Login Successful",
           description: `Welcome! Redirecting to your dashboard. Role: ${staffMember.role}`,
         });
-        // Use the 'next' parameter from URL if available and valid, otherwise default
         const nextUrl = searchParams.get('next') || redirectPath;
         router.push(nextUrl);
-        router.refresh(); // Ensure a full refresh to clear any cached user state
+        router.refresh(); 
 
       } catch (e) {
         setIsLoading(false);
@@ -125,11 +114,10 @@ export default function LoginPage() {
           description: "Could not determine user role. Redirecting to general dashboard.",
           variant: "destructive",
         });
-        router.push('/dashboard'); // Fallback redirect
+        router.push('/dashboard'); 
         router.refresh();
       }
     } else {
-      // Should not happen if signInError is null, but as a safeguard
       setIsLoading(false);
       setFormError("Login failed. User data not found.");
       toast({
