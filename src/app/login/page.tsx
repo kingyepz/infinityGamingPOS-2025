@@ -27,7 +27,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null); // Renamed to avoid conflict with 'error' from signIn
+  const [formError, setFormError] = useState<string | null>(null);
   const supabase = createClient();
 
   const form = useForm<LoginFormValues>({
@@ -38,23 +38,33 @@ export default function LoginPage() {
     },
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (formData: LoginFormValues) => { // Renamed data to formData
     setIsLoading(true);
     setFormError(null);
     
     const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
+      email: formData.email,
+      password: formData.password,
     });
 
     if (signInError) {
       setIsLoading(false);
-      setFormError(signInError.message || "Invalid credentials. Please try again.");
-      toast({
-        title: "Login Failed",
-        description: signInError.message || "Invalid credentials. Please try again.",
-        variant: "destructive",
-      });
+      // Check if it's an email not confirmed error
+      if (signInError.message.includes("Email not confirmed")) {
+        setFormError("Please confirm your email address before logging in. Check your inbox for a confirmation link.");
+        toast({
+          title: "Email Not Confirmed",
+          description: "Please check your email to confirm your account.",
+          variant: "destructive", 
+        });
+      } else {
+        setFormError(signInError.message || "Invalid credentials. Please try again.");
+        toast({
+          title: "Login Failed",
+          description: signInError.message || "Invalid credentials. Please try again.",
+          variant: "destructive",
+        });
+      }
       return;
     }
 
@@ -68,15 +78,18 @@ export default function LoginPage() {
 
         if (staffError || !staffMember) {
           setIsLoading(false);
-          // If role fetch fails or no staff record, default to general dashboard
-          // You might want to log staffError for debugging
           console.error("Error fetching staff role or staff member not found:", staffError);
+          // If no staff record, user might be valid but not staff.
+          // Redirect to a generic page or show specific message.
+          // For now, treating as potentially incomplete setup for this user.
+          setFormError("User role not configured. Please contact an administrator.");
           toast({
-            title: "Login Successful (Role Not Found)",
-            description: "Redirecting to general dashboard.",
+            title: "Login Successful (Role Missing)",
+            description: "Your account is valid, but role information is missing. Please contact support.",
+            variant: "destructive"
           });
-          router.push('/dashboard');
-          router.refresh();
+           // Optionally, sign them out if they MUST have a role to use the app
+           // await supabase.auth.signOut();
           return;
         }
 
@@ -90,7 +103,7 @@ export default function LoginPage() {
             break;
           // Add other roles and paths as needed
           // default: // 'floor_staff' or any other role
-          //   redirectPath = '/dashboard';
+          //   redirectPath = '/dashboard'; // Or a specific dashboard for 'floor_staff'
           //   break;
         }
         
@@ -98,8 +111,10 @@ export default function LoginPage() {
           title: "Login Successful",
           description: `Welcome! Redirecting to your dashboard. Role: ${staffMember.role}`,
         });
-        router.push(redirectPath);
-        router.refresh();
+        // Use the 'next' parameter from URL if available and valid, otherwise default
+        const nextUrl = searchParams.get('next') || redirectPath;
+        router.push(nextUrl);
+        router.refresh(); // Ensure a full refresh to clear any cached user state
 
       } catch (e) {
         setIsLoading(false);
@@ -197,6 +212,11 @@ export default function LoginPage() {
            <Link href="/forgot-password" passHref legacyBehavior>
             <a className="text-sm text-primary hover:underline hover:text-accent transition-colors">
               Forgot Password?
+            </a>
+          </Link>
+          <Link href="/signup" passHref legacyBehavior>
+            <a className="text-sm text-primary hover:underline hover:text-accent transition-colors">
+              Don&apos;t have an account? Sign Up
             </a>
           </Link>
            <p className="text-xs text-muted-foreground mt-4">

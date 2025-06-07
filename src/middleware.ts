@@ -32,19 +32,19 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAuthenticated = !!user;
-  const authPages = ['/login', '/forgot-password', '/reset-password'];
+  // Added /signup to authPages
+  const authPages = ['/login', '/forgot-password', '/reset-password', '/signup']; 
 
   // If not authenticated and not an auth page or API auth route, redirect to login
   if (!isAuthenticated && !authPages.includes(pathname) && !pathname.startsWith('/api/auth')) {
     const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('next', pathname);
+    loginUrl.searchParams.set('next', pathname); // Preserve intended destination
     return NextResponse.redirect(loginUrl);
   }
 
   // If authenticated:
   if (isAuthenticated) {
     // If on an auth page, redirect to a default dashboard path.
-    // The client-side login will handle role-specific redirection.
     if (authPages.includes(pathname)) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
@@ -55,29 +55,29 @@ export async function middleware(request: NextRequest) {
     }
 
     // Role-based protection for specific dashboard paths
-    const { data: staffMember, error: staffError } = await supabase
-      .from('staff')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
+    // This logic relies on the user being fully set up, including their role in the 'staff' table.
+    if (pathname.startsWith('/dashboard/admin') || pathname.startsWith('/dashboard/cashier')) {
+      const { data: staffMember, error: staffError } = await supabase
+        .from('staff')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
 
-    if (staffError && !pathname.startsWith('/dashboard')) { 
-        // If there's an error fetching role, and not already trying to go to a general dashboard,
-        // let them proceed to a general dashboard or error page rather than blocking completely.
-        // However, this might still allow access if staff record is missing.
-        // A stricter approach would redirect to login or an error page.
-        console.error("Middleware: Error fetching staff role:", staffError.message);
-    }
-    
-    const userRole = staffMember?.role;
-
-    if (pathname.startsWith('/dashboard/admin')) {
-      if (userRole !== 'admin') {
-        return NextResponse.redirect(new URL('/dashboard?error=unauthorized', request.url));
-      }
-    } else if (pathname.startsWith('/dashboard/cashier')) {
-      if (userRole !== 'cashier' && userRole !== 'admin') { // Admins can access cashier dashboard
-        return NextResponse.redirect(new URL('/dashboard?error=unauthorized', request.url));
+      if (staffError || !staffMember) { 
+          console.error("Middleware: Error fetching staff role or staff member not found:", staffError?.message);
+          // If role cannot be determined, redirect to general dashboard or an error page.
+          // This prevents access to role-specific pages if the role is unknown.
+          if (pathname !== '/dashboard') { // Avoid redirect loop if already on general dashboard
+            return NextResponse.redirect(new URL('/dashboard?error=role_check_failed', request.url));
+          }
+      } else {
+        const userRole = staffMember.role;
+        if (pathname.startsWith('/dashboard/admin') && userRole !== 'admin') {
+          return NextResponse.redirect(new URL('/dashboard?error=unauthorized_admin_access', request.url));
+        }
+        if (pathname.startsWith('/dashboard/cashier') && userRole !== 'cashier' && userRole !== 'admin') {
+          return NextResponse.redirect(new URL('/dashboard?error=unauthorized_cashier_access', request.url));
+        }
       }
     }
     // Add more role-specific path checks here if needed
