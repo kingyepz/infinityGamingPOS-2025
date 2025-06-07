@@ -38,38 +38,70 @@ export default function SignUpPage() {
     },
   });
 
-  const onSubmit = async (data: SignUpFormValues) => {
+  const onSubmit = async (formData: SignUpFormValues) => { // Renamed data to formData
     setIsLoading(true);
     setFormError(null);
     
-    const { error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
       options: {
-        // You can add emailRedirectTo here if you want to redirect
-        // to a specific page after email confirmation
-        // emailRedirectTo: `${window.location.origin}/welcome`,
+        // emailRedirectTo: `${window.location.origin}/welcome`, // Optional: redirect after email confirmation
       }
     });
 
-    setIsLoading(false);
-
-    if (error) {
-      setFormError(error.message || "Could not sign up. Please try again.");
+    if (signUpError) {
+      setIsLoading(false);
+      setFormError(signUpError.message || "Could not sign up. Please try again.");
       toast({
         title: "Sign Up Failed",
-        description: error.message || "An unexpected error occurred.",
+        description: signUpError.message || "An unexpected error occurred.",
         variant: "destructive",
       });
-    } else {
-      setIsSubmitted(true);
-      toast({
-        title: "Sign Up Successful!",
-        description: "Please check your email to confirm your account.",
-      });
-      // Don't redirect immediately, user needs to confirm email
-      // router.push('/login'); 
+      return;
     }
+
+    if (signUpData.user) {
+      // User created in auth.users, now add to staff table with a default role
+      const userId = signUpData.user.id;
+      const defaultRole = 'floor_staff'; // More secure default role
+
+      // Attempt to get full_name from email (basic split)
+      const emailParts = formData.email.split('@');
+      const fullNameGuess = emailParts[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+
+      const { error: staffInsertError } = await supabase
+        .from('staff') // Using 'staff' table as per our existing setup
+        .insert([
+          { user_id: userId, role: defaultRole, full_name: fullNameGuess } // Assigning 'floor_staff'
+        ]);
+
+      if (staffInsertError) {
+        // Log this error, but don't block the user from seeing the "confirm email" message
+        // as their auth account is already created.
+        console.error('Error inserting default role into staff table:', staffInsertError);
+        toast({
+          title: "Account Created (Role Issue)",
+          description: "Your account was created, but there was an issue setting the default role. Please contact support if problems persist after email verification.",
+          variant: "destructive", // Or "warning"
+        });
+      } else {
+        console.log(`Default role '${defaultRole}' assigned successfully to user ${userId}`);
+      }
+    } else if (!signUpData.session && !signUpData.user) {
+      // This case means email confirmation is required.
+      // If user is null and session is null, sign up initiated, email sent.
+      // This is the expected flow for Supabase Auth with email confirmation.
+    }
+
+
+    setIsLoading(false);
+    setIsSubmitted(true); // Show "check email" message
+    toast({
+      title: "Sign Up Successful!",
+      description: "Please check your email to confirm your account.",
+    });
   };
 
   return (
@@ -171,3 +203,5 @@ export default function SignUpPage() {
     </div>
   );
 }
+
+    
