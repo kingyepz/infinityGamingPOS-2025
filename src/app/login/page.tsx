@@ -77,10 +77,15 @@ export default function LoginPage() {
 
         if (staffError || !staffMember) {
           setIsLoading(false);
-          console.error("Error fetching staff role or staff member not found:", staffError);
+          if (staffError) {
+            console.error("Error fetching staff role from database:", staffError);
+          } else {
+            // This case means !staffMember is true, and staffError is null/undefined
+            console.warn(`Staff member record not found for user ID: ${authData.user.id}. User role cannot be determined.`);
+          }
           setFormError("User role not configured. Please contact an administrator.");
           toast({
-            title: "Login Issue", // Changed title
+            title: "Login Issue",
             description: "Your account is valid, but role information is missing. Please contact an administrator.",
             variant: "destructive"
           });
@@ -95,6 +100,15 @@ export default function LoginPage() {
           case 'cashier':
             redirectPath = '/dashboard/cashier';
             break;
+          // Add other roles like 'floor_staff' if they have specific dashboards
+          // case 'floor_staff':
+          //   redirectPath = '/dashboard/floor'; // Example
+          //   break;
+          default:
+            // For 'floor_staff' or any other roles not explicitly listed,
+            // they will go to the general /dashboard.
+            redirectPath = '/dashboard';
+            break;
         }
         
         toast({
@@ -107,22 +121,24 @@ export default function LoginPage() {
 
       } catch (e) {
         setIsLoading(false);
-        console.error("Error processing role:", e);
+        const unknownError = e instanceof Error ? e.message : "An unknown error occurred during role processing.";
+        console.error("Error processing role:", unknownError);
         setFormError("Could not determine user role. Please contact support.");
         toast({
           title: "Role Check Failed",
-          description: "Could not determine user role. Redirecting to general dashboard.",
+          description: `Could not determine user role. ${unknownError}`,
           variant: "destructive",
         });
-        router.push('/dashboard'); 
-        router.refresh();
+        // Potentially redirect to a generic dashboard or keep on login page with error
+        // router.push('/dashboard'); 
+        // router.refresh();
       }
     } else {
       setIsLoading(false);
-      setFormError("Login failed. User data not found.");
+      setFormError("Login failed. User data not found after successful authentication.");
       toast({
         title: "Login Failed",
-        description: "User data not found after successful authentication.",
+        description: "User data not found after successful authentication. This is unexpected.",
         variant: "destructive",
       });
     }
