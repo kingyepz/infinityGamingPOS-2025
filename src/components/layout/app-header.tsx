@@ -24,62 +24,65 @@ const getPageTitle = (pathname: string): string => {
 export function AppHeader() {
   const pathname = usePathname();
   const title = getPageTitle(pathname);
-  const [user, setUser] = useState<User | null>(null);
-  const [isAdminByEmail, setIsAdminByEmail] = useState(false); // Based on NEXT_PUBLIC_ADMIN_EMAIL
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [userFullName, setUserFullName] = useState<string | null>(null);
+  const [userRoleForDisplay, setUserRoleForDisplay] = useState<string | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
-  // const [userRole, setUserRole] = useState<string | null>(null); // For future database role display
 
   useEffect(() => {
     const supabase = createClient();
-    const fetchUserAndRole = async () => {
+    const fetchUserAndProfile = async () => {
       setIsLoadingUser(true);
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      setUser(currentUser);
+      const { data: { user: currentAuthUser } } = await supabase.auth.getUser();
+      setAuthUser(currentAuthUser);
 
-      if (currentUser) {
-        // Email-based admin check (visual cue)
-        const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-        setIsAdminByEmail(!!adminEmail && currentUser.email === adminEmail);
-
-        // Fetch role from 'staff' table - uncomment and adapt if needed for header display
-        /*
-        const { data: staffMember, error } = await supabase
-          .from('staff')
-          .select('role')
-          .eq('user_id', currentUser.id)
+      if (currentAuthUser) {
+        // Fetch full_name and role from public.users table
+        const { data: userData, error: userDbError } = await supabase
+          .from('users')
+          .select('full_name, role')
+          .eq('id', currentAuthUser.id)
           .single();
-        if (staffMember) {
-          setUserRole(staffMember.role);
+
+        if (userDbError) {
+          console.warn(`AppHeader: Error fetching user details from public.users for ${currentAuthUser.id}:`, userDbError.message);
+          setUserFullName(currentAuthUser.email); // Fallback to email
+          setUserRoleForDisplay(null);
+        } else if (userData) {
+          setUserFullName(userData.full_name || currentAuthUser.email); // Use full_name or fallback to email
+          setUserRoleForDisplay(userData.role);
+        } else {
+            setUserFullName(currentAuthUser.email); // Fallback to email if no record found
+            setUserRoleForDisplay(null);
+            console.warn(`AppHeader: No user record found in public.users for ${currentAuthUser.id}`);
         }
-        if(error) console.error("Error fetching role for header:", error);
-        */
       } else {
-        setIsAdminByEmail(false);
-        // setUserRole(null);
+        setUserFullName(null);
+        setUserRoleForDisplay(null);
       }
       setIsLoadingUser(false);
     };
 
-    fetchUserAndRole();
+    fetchUserAndProfile();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-        setIsAdminByEmail(!!adminEmail && currentUser.email === adminEmail);
-        // Potentially re-fetch role here if it can change during a session
-        // fetchUserAndRole(); // Or a more specific role fetch
-      } else {
-        setIsAdminByEmail(false);
-        // setUserRole(null);
-      }
+      // Re-fetch profile on auth change
+      fetchUserAndProfile();
     });
 
     return () => {
       authListener?.subscription.unsubscribe();
     };
   }, []);
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return '';
+    const nameParts = name.split(' ');
+    if (nameParts.length > 1) {
+      return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
@@ -90,23 +93,26 @@ export function AppHeader() {
       <div className="flex items-center gap-3">
         {isLoadingUser ? (
           <>
-            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-9 w-9 rounded-full" />
             <Skeleton className="h-4 w-32" />
           </>
-        ) : user ? (
+        ) : authUser ? (
           <>
             <Avatar className="h-9 w-9">
-              <AvatarImage src="https://placehold.co/100x100.png" alt={user.email || "User Avatar"} data-ai-hint="user avatar" />
+              <AvatarImage src="https://placehold.co/100x100.png" alt={userFullName || "User Avatar"} data-ai-hint="user avatar" />
               <AvatarFallback>
-                {isAdminByEmail ? <ShieldCheck className="h-5 w-5" /> : <UserCircle className="h-5 w-5" />}
+                {userRoleForDisplay === 'admin' ? <ShieldCheck className="h-5 w-5" /> : (getInitials(userFullName) || <UserCircle className="h-5 w-5" />)}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col text-xs">
-              <span className="font-medium text-foreground truncate max-w-[150px] sm:max-w-[200px]" title={user.email || ''}>
-                {user.email || 'User'}
+              <span className="font-medium text-foreground truncate max-w-[150px] sm:max-w-[200px]" title={userFullName || authUser.email || ''}>
+                {userFullName || authUser.email || 'User'}
               </span>
-              {/* Display role from DB if fetched: {userRole && <span className="text-primary font-semibold">{userRole}</span>} */}
-              {isAdminByEmail && <span className="text-primary font-semibold">Admin (Email Match)</span>}
+              {userRoleForDisplay && (
+                <span className="text-primary font-semibold capitalize">
+                  {userRoleForDisplay}
+                </span>
+              )}
             </div>
           </>
         ) : (
