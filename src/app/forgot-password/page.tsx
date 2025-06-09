@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (data: ForgotPasswordFormValues) => {
     setIsLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-      redirectTo: `${window.location.origin}/reset-password`, // URL to your reset password page
+      redirectTo: `${window.location.origin}/auth/update-password`, // Changed to /auth/update-password
     });
 
     setIsLoading(false);
@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
       toast({
         title: "Password Reset Email Sent",
         description: "If an account exists for this email, a reset link has been sent.",
-        variant: "default" // Or a "success" variant
+        variant: "default" 
       });
     }
   };

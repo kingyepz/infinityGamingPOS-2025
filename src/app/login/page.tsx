@@ -69,23 +69,23 @@ export default function LoginPage() {
 
     if (authData.user) {
       try {
-        const { data: staffMember, error: staffError } = await supabase
-          .from('staff')
+        // Query 'public.users' table for the role, linking on 'id'
+        const { data: userData, error: userError } = await supabase
+          .from('users') // Changed from 'staff' to 'users'
           .select('role')
-          .eq('user_id', authData.user.id)
+          .eq('id', authData.user.id) // Changed from 'user_id' to 'id'
           .single();
 
-        if (staffError || !staffMember) {
+        if (userError || !userData) {
           setIsLoading(false);
-          if (staffError) {
-            console.error("Error fetching staff role from database:", staffError);
+          if (userError) {
+            console.error("Error fetching user role from database:", userError);
           } else {
-            // This case means !staffMember is true, and staffError is null/undefined
-            console.warn(`Staff member record not found for user ID: ${authData.user.id}. User role cannot be determined.`);
+            console.warn(`User record or role not found in 'users' table for user ID: ${authData.user.id}.`);
           }
           setFormError("User role not configured. Please contact an administrator.");
           toast({
-            title: "Login Issue", // Changed title
+            title: "Login Issue",
             description: "Your account is valid, but role information is missing. Please contact an administrator.",
             variant: "destructive"
           });
@@ -93,21 +93,27 @@ export default function LoginPage() {
         }
 
         let redirectPath = '/dashboard'; 
-        switch (staffMember.role) {
+        switch (userData.role) {
           case 'admin':
             redirectPath = '/dashboard/admin';
             break;
-          case 'cashier':
+          case 'cashier': // Assuming 'staff' or 'supervisor' from spec map to 'cashier' or 'floor_staff'
             redirectPath = '/dashboard/cashier';
             break;
+          case 'supervisor': // Added supervisor role as per new spec
+             redirectPath = '/dashboard/cashier'; // Example: Supervisors use cashier dashboard
+             break;
+          case 'floor_staff': // Default role, as per previous setup
+            redirectPath = '/dashboard';
+            break;
           default:
-            redirectPath = '/dashboard'; // For 'floor_staff' or any other roles
+            redirectPath = '/dashboard'; 
             break;
         }
         
         toast({
           title: "Login Successful",
-          description: `Welcome! Redirecting to your dashboard. Role: ${staffMember.role}`,
+          description: `Welcome! Redirecting to your dashboard. Role: ${userData.role}`,
         });
         const nextUrl = searchParams.get('next') || redirectPath;
         router.push(nextUrl);
@@ -222,4 +228,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

@@ -46,12 +46,13 @@ export default function SignUpPage() {
       email: formData.email,
       password: formData.password,
       options: {
-        // emailRedirectTo: `${window.location.origin}/welcome`, // Optional: redirect after email confirmation
+        // emailRedirectTo: `${window.location.origin}/welcome`, // Optional
       }
     });
 
+    setIsLoading(false);
+
     if (signUpError) {
-      setIsLoading(false);
       setFormError(signUpError.message || "Could not sign up. Please try again.");
       toast({
         title: "Sign Up Failed",
@@ -61,53 +62,14 @@ export default function SignUpPage() {
       return;
     }
 
-    let staffRoleAssigned = false;
-    if (signUpData.user) {
-      const userId = signUpData.user.id;
-      const defaultRole = 'floor_staff';
-      const emailParts = formData.email.split('@');
-      const fullNameGuess = emailParts[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-      const { error: staffInsertError } = await supabase
-        .from('staff')
-        .insert([
-          { user_id: userId, role: defaultRole, full_name: fullNameGuess }
-        ]);
-
-      if (staffInsertError) {
-        console.error('Error inserting default role into staff table:', staffInsertError);
-        setFormError("Account created, but initial role assignment failed. Please contact an administrator to complete your account setup.");
-        toast({
-          title: "Sign Up Incomplete",
-          description: "Your account was created, but essential role information could not be set. Please contact an administrator before logging in.",
-          variant: "destructive",
-          duration: 10000, // Longer duration for this important message
-        });
-        setIsLoading(false);
-        return; // Stop further processing, user should not proceed as if sign up is fully complete
-      } else {
-        staffRoleAssigned = true;
-        console.log(`Default role '${defaultRole}' assigned successfully to user ${userId}`);
-      }
-    }
+    // As per new spec, Admins create staff accounts via Edge Functions.
+    // Public sign-up creates an auth user, but role assignment is separate.
+    // No automatic role insertion into 'public.users' from client-side here.
     
-    // If we reach here, auth.signUp was successful.
-    // isSubmitted will control showing the "check email" message.
     setIsSubmitted(true);
-    setIsLoading(false);
-
-    let toastMessage = "Please check your email to confirm your account.";
-    if (staffRoleAssigned) {
-      toastMessage += " Your default role has been assigned."
-    } else if (signUpData.user === null && !signUpError) {
-      // This case means email confirmation required, and we couldn't assign role yet as user object wasn't available.
-      // User will need role assigned after confirming email & logging in for the first time (or admin does it).
-      toastMessage += " You will need your role configured after email confirmation."
-    }
-
     toast({
       title: "Sign Up Initiated!",
-      description: toastMessage,
+      description: "Please check your email to confirm your account. An administrator will need to assign you a role before you can fully access the system.",
     });
   };
 
@@ -127,7 +89,7 @@ export default function SignUpPage() {
                 Verification Email Sent!
               </p>
               <p className="text-muted-foreground text-sm">
-                Please check your inbox (and spam folder) for the email address you provided. Click the link in the email to confirm your account. If you had issues with role assignment, contact an admin.
+                Please check your inbox (and spam folder) for the email address you provided. Click the link in the email to confirm your account. After confirmation, an administrator will need to assign you a role to grant system access.
               </p>
               <Button onClick={() => router.push('/login')} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Login
@@ -210,4 +172,3 @@ export default function SignUpPage() {
     </div>
   );
 }
-    

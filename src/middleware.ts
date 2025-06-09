@@ -32,8 +32,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAuthenticated = !!user;
-  // Added /signup to authPages
-  const authPages = ['/login', '/forgot-password', '/reset-password', '/signup']; 
+  // Added /signup and /auth/update-password to authPages
+  const authPages = ['/login', '/forgot-password', '/auth/update-password', '/signup']; 
 
   // If not authenticated and not an auth page or API auth route, redirect to login
   if (!isAuthenticated && !authPages.includes(pathname) && !pathname.startsWith('/api/auth')) {
@@ -55,32 +55,32 @@ export async function middleware(request: NextRequest) {
     }
 
     // Role-based protection for specific dashboard paths
-    // This logic relies on the user being fully set up, including their role in the 'staff' table.
     if (pathname.startsWith('/dashboard/admin') || pathname.startsWith('/dashboard/cashier')) {
-      const { data: staffMember, error: staffError } = await supabase
-        .from('staff')
+      // Ideally, role would come from JWT custom claims for performance.
+      // For now, querying 'users' table.
+      const { data: userData, error: userDbError } = await supabase
+        .from('users') // Changed from 'staff' to 'users'
         .select('role')
-        .eq('user_id', user.id)
+        .eq('id', user.id) // Changed from 'user_id' to 'id'
         .single();
 
-      if (staffError || !staffMember) { 
-          console.error("Middleware: Error fetching staff role or staff member not found:", staffError?.message);
-          // If role cannot be determined, redirect to general dashboard or an error page.
-          // This prevents access to role-specific pages if the role is unknown.
-          if (pathname !== '/dashboard') { // Avoid redirect loop if already on general dashboard
+      if (userDbError || !userData) { 
+          console.error("Middleware: Error fetching user role or user record not found in 'users' table:", userDbError?.message);
+          if (pathname !== '/dashboard') {
             return NextResponse.redirect(new URL('/dashboard?error=role_check_failed', request.url));
           }
       } else {
-        const userRole = staffMember.role;
+        const userRole = userData.role;
         if (pathname.startsWith('/dashboard/admin') && userRole !== 'admin') {
           return NextResponse.redirect(new URL('/dashboard?error=unauthorized_admin_access', request.url));
         }
-        if (pathname.startsWith('/dashboard/cashier') && userRole !== 'cashier' && userRole !== 'admin') {
+        // Supervisor and Cashier might share a dashboard or have distinct ones.
+        // Adjust logic here based on specific requirements for 'cashier' and 'supervisor' roles.
+        if (pathname.startsWith('/dashboard/cashier') && userRole !== 'cashier' && userRole !== 'admin' && userRole !== 'supervisor') {
           return NextResponse.redirect(new URL('/dashboard?error=unauthorized_cashier_access', request.url));
         }
       }
     }
-    // Add more role-specific path checks here if needed
   }
 
   return response;
@@ -96,7 +96,12 @@ export const config = {
      * - favicon.ico (favicon file)
      * - images (public images folder)
      * - assets (public assets folder)
+     * - auth/update-password (allow access to this path for password reset)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|images|assets).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|images|assets|auth/update-password).*)',
+    // Ensure auth/update-password is also matched by middleware if it needs to check auth status for redirection
+    // However, the above negative lookahead should allow it if it's an auth page.
+    // Re-adding it explicitly if it needs protection/redirection when authenticated.
+    // For now, it's an authPage, so handled by `authPages` check.
   ],
 };
