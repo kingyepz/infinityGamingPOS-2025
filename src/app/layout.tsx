@@ -5,7 +5,6 @@ import { Inter as FontSans } from "next/font/google"
 import { cn } from "@/lib/utils"
 import ClientToaster from '@/components/client-toaster';
 import { ThemeProvider } from '@/components/theme-provider';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ReactQueryProvider from '@/components/react-query-provider';
 
 const fontSans = FontSans({
