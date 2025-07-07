@@ -5,8 +5,8 @@
 
 @layer base {
   :root {
-    /* Light Mode - Argon Theme Inspired */
-    --background: 240 10% 96%; /* Light Gray-Blue */
+    /* Light Mode - Refined Theme */
+    --background: 220 14% 96%; /* Subtle Off-White/Light Gray */
     --foreground: 224 71.4% 4.1%; /* Dark Gray for text */
 
     --card: 0 0% 100%;
@@ -15,23 +15,23 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
 
-    --primary: 260 85% 60%; /* Vibrant Purple/Blue */
+    --primary: 260 85% 60%; /* Vibrant Purple */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 13% 91%; /* Lighter Gray for buttons */
+    --secondary: 198 93% 88%; /* Light Blue */
     --secondary-foreground: 224 71.4% 4.1%;
 
     --muted: 220 13% 91%;
     --muted-foreground: 220 9% 46%;
 
-    --accent: 220 13% 91%;
+    --accent: 220 13% 91%; /* Can be same as muted or a different subtle color */
     --accent-foreground: 224 71.4% 4.1%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 13% 86%;
-    --input: 220 13% 86%;
+    --border: 220 13% 88%; /* Slightly darker for better contrast */
+    --input: 220 13% 88%;
     --ring: 260 85% 60%;
 
     --radius: 0.75rem;
@@ -41,8 +41,8 @@
     --sidebar-foreground: 224 71.4% 4.1%;
     --sidebar-primary: hsl(var(--primary));
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: hsl(var(--primary));
-    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-accent: hsl(var(--primary) / 0.1);
+    --sidebar-accent-foreground: hsl(var(--primary));
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
 
@@ -54,7 +54,7 @@
   }
 
   .dark {
-    /* Dark Mode - Argon Theme Inspired */
+    /* Dark Mode - Refined Theme */
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
@@ -64,10 +64,10 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 260 85% 65%;
+    --primary: 260 85% 65%; /* Slightly brighter purple for dark mode */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 217 33% 25%;
+    --secondary: 198, 93%, 30%; /* Darker Blue */
     --secondary-foreground: 210 40% 98%;
 
     --muted: 217 33% 25%;
@@ -88,8 +88,8 @@
     --sidebar-foreground: var(--foreground);
     --sidebar-primary: var(--primary);
     --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-accent: var(--primary);
-    --sidebar-accent-foreground: var(--primary-foreground);
+    --sidebar-accent: hsl(var(--primary) / 0.15);
+    --sidebar-accent-foreground: var(--primary);
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
     

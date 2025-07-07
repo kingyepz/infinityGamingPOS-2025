@@ -11,9 +11,9 @@ export function StaffPerformance() {
   const sortedStaff = [...MOCK_STAFF_PERFORMANCE].sort((a, b) => b.revenueToday - a.revenueToday);
 
   return (
-    <Card>
+    <Card className="shadow-md hover:shadow-lg transition-shadow">
       <CardHeader>
-        <CardTitle>Staff Performance</CardTitle>
+        <CardTitle className="text-xl font-headline">Staff Performance</CardTitle>
         <CardDescription>Today's revenue generated per staff member.</CardDescription>
       </CardHeader>
       <CardContent>

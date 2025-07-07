@@ -2,14 +2,17 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlusCircle, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
 export function QuickActions() {
   return (
-    <Card>
-      <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
+    <Card className="shadow-md">
+      <CardHeader>
+        <CardTitle className="text-xl font-headline">Quick Actions</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col sm:flex-row items-center gap-4">
         <Link href="/sessions" passHref className="w-full sm:w-auto">
           <Button className="w-full">
             <PlusCircle className="mr-2 h-4 w-4" /> Start New Session

@@ -12,9 +12,9 @@ const data = [
 
 export function PaymentMethodChart() {
   return (
-    <Card>
+    <Card className="shadow-md hover:shadow-lg transition-shadow">
       <CardHeader>
-        <CardTitle>Payment Methods</CardTitle>
+        <CardTitle className="text-xl font-headline">Payment Methods</CardTitle>
         <CardDescription>Breakdown of revenue by payment type today.</CardDescription>
       </CardHeader>
       <CardContent>

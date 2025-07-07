@@ -17,9 +17,9 @@ const data = [
 
 export function RevenueTrendChart() {
   return (
-    <Card>
+    <Card className="shadow-md hover:shadow-lg transition-shadow">
       <CardHeader>
-        <CardTitle>Revenue Trends</CardTitle>
+        <CardTitle className="text-xl font-headline">Revenue Trends</CardTitle>
         <CardDescription>This week's revenue compared to the previous week.</CardDescription>
       </CardHeader>
       <CardContent className="pl-2">

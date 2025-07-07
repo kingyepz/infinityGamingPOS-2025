@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import React, { useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
+import { Badge } from '@/components/ui/badge';
 
 
 const navItems = [
@@ -91,12 +92,12 @@ export function AppSidebar() {
     <>
       <SidebarHeader className="p-4 border-b border-border/60">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="bg-primary p-2 rounded-lg">
+          <div className="bg-primary p-2 rounded-lg shadow-md">
             <GamepadIcon className="h-6 w-6 text-primary-foreground" />
           </div>
           <span
             className={cn(
-              "text-lg font-bold text-foreground",
+              "text-lg font-bold font-headline text-foreground tracking-tight",
               state === 'collapsed' && "hidden"
             )}
           >
@@ -108,7 +109,7 @@ export function AppSidebar() {
         <SidebarMenu>
           {isLoading && Array.from({ length: 5 }).map((_, index) => (
              <SidebarMenuItem key={index} className="px-2">
-                <div className="h-12 w-full bg-muted/50 animate-pulse rounded-md" />
+                <div className="h-10 w-full bg-muted/50 animate-pulse rounded-md" />
              </SidebarMenuItem>
           ))}
           {!isLoading && filteredNavItems.map((item) => {
@@ -120,7 +121,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     isActive={isActive}
                     tooltip={{ children: item.label, className: "font-body" }}
-                    className="font-body text-base"
+                    className="font-body text-base font-medium"
                     size="lg"
                     disabled={item.comingSoon}
                     aria-disabled={item.comingSoon}
@@ -131,7 +132,7 @@ export function AppSidebar() {
                      )} />
                     <span>{item.label}</span>
                      {item.comingSoon && state === 'expanded' && (
-                        <span className="ml-auto text-xs bg-yellow-400/20 text-yellow-500 px-2 py-0.5 rounded-md">Soon</span>
+                        <Badge variant="outline" className="ml-auto text-xs bg-yellow-400/20 text-yellow-600 dark:text-yellow-400 border-none">Soon</Badge>
                     )}
                   </SidebarMenuButton>
                 </Link>

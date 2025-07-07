@@ -11,9 +11,9 @@ const data = [
 
 export function SessionTypeDistributionChart() {
   return (
-    <Card>
+    <Card className="shadow-md hover:shadow-lg transition-shadow">
       <CardHeader>
-        <CardTitle>Session Billing Types</CardTitle>
+        <CardTitle className="text-xl font-headline">Session Billing Types</CardTitle>
         <CardDescription>Breakdown of customer billing preferences.</CardDescription>
       </CardHeader>
       <CardContent>

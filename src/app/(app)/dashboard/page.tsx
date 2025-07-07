@@ -50,10 +50,8 @@ export default function DashboardPage() {
   const loyaltyPointsToday = "1,565";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <WelcomeHeader />
-
-      <QuickActions />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -61,18 +59,20 @@ export default function DashboardPage() {
           value={`${activeSessionsCount}`}
           icon={Gamepad2}
           description="Click to view all active sessions"
+          linkTo='/sessions'
         />
         <StatCard
           title="Today's Revenue"
           value={todaysRevenue}
           icon={DollarSign}
-          description="+15.5% from yesterday"
+          description={<span className="text-green-500">+15.5% from yesterday</span>}
         />
         <StatCard
           title="New Customers Today"
           value={`+${newCustomersCount}`}
           icon={Users}
           description="Welcome our new gamers!"
+          linkTo='/customers'
         />
         <StatCard
           title="Avg. Transaction Value"
@@ -100,14 +100,15 @@ export default function DashboardPage() {
         />
       </div>
 
+      <QuickActions />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
            <RevenueTrendChart />
            <ConsoleUtilization />
            <HourlyActivityChart />
         </div>
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-8">
           <SessionTypeDistributionChart />
           <PaymentMethodChart />
           {userRole === 'admin' && <StaffPerformance />}
@@ -117,4 +118,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

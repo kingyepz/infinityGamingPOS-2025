@@ -26,9 +26,9 @@ export function ConsoleUtilization() {
   }
 
   return (
-    <Card>
+    <Card className="shadow-md hover:shadow-lg transition-shadow">
       <CardHeader>
-        <CardTitle>Console Utilization</CardTitle>
+        <CardTitle className="text-xl font-headline">Console Utilization</CardTitle>
         <CardDescription>Real-time status and usage of game consoles.</CardDescription>
       </CardHeader>
       <CardContent>

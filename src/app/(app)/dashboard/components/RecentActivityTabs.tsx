@@ -27,9 +27,9 @@ const newCustomers = [
 
 export function RecentActivityTabs() {
   return (
-    <Card className="h-full">
+    <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
       <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
+        <CardTitle className="text-xl font-headline">Recent Activity</CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="sessions" className="w-full">

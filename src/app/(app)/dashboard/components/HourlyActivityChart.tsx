@@ -24,9 +24,9 @@ const hourlyData = [
 
 export function HourlyActivityChart() {
   return (
-    <Card>
+    <Card className="shadow-md hover:shadow-lg transition-shadow">
       <CardHeader>
-        <CardTitle>Hourly Activity</CardTitle>
+        <CardTitle className="text-xl font-headline">Hourly Activity</CardTitle>
         <CardDescription>Number of active sessions throughout the day.</CardDescription>
       </CardHeader>
       <CardContent className="pl-2">
