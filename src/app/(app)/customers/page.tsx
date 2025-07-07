@@ -24,7 +24,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Explicitly define payloads for clarity and robustness
-type AddCustomerPayload = Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'join_date' | 'loyalty_points' | 'loyalty_tier'>;
+type AddCustomerPayload = Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'join_date' | 'loyalty_tier'>;
 type UpdateCustomerPayload = Pick<Customer, 'id' | 'full_name' | 'phone_number' | 'email' | 'loyalty_points' | 'loyalty_tier'>;
 
 // Define functions to interact with Supabase
@@ -73,7 +73,7 @@ export default function CustomersPage() {
     mutationFn: addCustomer,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      toast({ title: "Customer Added", description: "The new customer has been registered successfully." });
+      toast({ title: "Customer Added", description: "The new customer has been registered successfully and awarded 50 bonus points." });
       setIsFormOpen(false);
     },
     onError: (err: Error) => {
@@ -139,11 +139,12 @@ export default function CustomersPage() {
         loyalty_tier: formData.loyalty_tier ?? selectedCustomer.loyalty_tier,
       });
     } else {
-      // For new customers, we only send the essential fields and let the DB handle defaults.
+      // For new customers, we send the essential fields plus the 50 point bonus.
       addMutation.mutate({
         full_name: formData.full_name,
         phone_number: formData.phone_number,
         email: formData.email,
+        loyalty_points: 50,
       });
     }
   };
