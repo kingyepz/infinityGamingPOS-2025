@@ -5,48 +5,48 @@
 
 @layer base {
   :root {
-    /* Light Mode - White/Purple/Blue Theme */
-    --background: 0 0% 100%; /* White */
-    --foreground: 222.2 84% 4.9%; /* Dark Blue/Black for text */
+    /* Light Mode - Argon Theme Inspired */
+    --background: 240 10% 96%; /* Light Gray-Blue */
+    --foreground: 224 71.4% 4.1%; /* Dark Gray for text */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 224 71.4% 4.1%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 224 71.4% 4.1%;
 
-    --primary: 270 90% 65%; /* Vibrant Purple */
-    --primary-foreground: 0 0% 100%; /* White */
+    --primary: 260 85% 60%; /* Vibrant Purple/Blue */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%; /* Light Blue */
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 13% 91%; /* Lighter Gray for buttons */
+    --secondary-foreground: 224 71.4% 4.1%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 224 71.4% 4.1%;
+    --muted: 220 13% 91%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 210 40% 98%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 220 13% 91%;
+    --accent-foreground: 224 71.4% 4.1%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 270 90% 65%;
+    --border: 220 13% 86%;
+    --input: 220 13% 86%;
+    --ring: 260 85% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    /* Sidebar variables now reference main theme for consistency */
-    --sidebar-background: var(--secondary);
-    --sidebar-foreground: var(--secondary-foreground);
-    --sidebar-primary: var(--primary);
-    --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-accent: 210 40% 94%; /* Slightly darker blue for hover */
-    --sidebar-accent-foreground: var(--accent-foreground);
+    /* Sidebar variables */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 224 71.4% 4.1%;
+    --sidebar-primary: hsl(var(--primary));
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: hsl(var(--primary));
+    --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
 
-    --chart-1: 270 90% 65%;
+    --chart-1: hsl(var(--primary));
     --chart-2: 195 53% 79%;
     --chart-3: 0 84.2% 60.2%;
     --chart-4: 48 95.8% 53.1%;
@@ -54,46 +54,46 @@
   }
 
   .dark {
-    /* Dark Mode - Purple/Blue Theme */
-    --background: 222.2 84% 4.9%;
+    /* Dark Mode - Argon Theme Inspired */
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 15%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 270 90% 65%;
+    --primary: 260 85% 65%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217 33% 25%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 217 33% 25%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 217 33% 25%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 270 90% 75%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 260 85% 65%;
 
-    /* Sidebar variables now reference main theme for consistency */
-    --sidebar-background: 222.2 84% 3.9%;
+    /* Sidebar variables */
+    --sidebar-background: 222 47% 13%;
     --sidebar-foreground: var(--foreground);
     --sidebar-primary: var(--primary);
     --sidebar-primary-foreground: var(--primary-foreground);
-    --sidebar-accent: var(--accent);
-    --sidebar-accent-foreground: var(--accent-foreground);
+    --sidebar-accent: var(--primary);
+    --sidebar-accent-foreground: var(--primary-foreground);
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
-
-    --chart-1: 270 90% 65%;
+    
+    --chart-1: hsl(var(--primary));
     --chart-2: 195 53% 79%;
     --chart-3: 0 84.2% 60.2%;
     --chart-4: 48 95.8% 53.1%;

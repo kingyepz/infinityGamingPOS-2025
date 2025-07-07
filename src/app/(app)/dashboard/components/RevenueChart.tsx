@@ -1,50 +1,51 @@
 
 "use client";
 
-import React from 'react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CURRENCY_SYMBOL } from '@/lib/constants';
 
-// Hardcoded data to avoid server/client mismatch with Math.random
 const data = [
-  { date: 'Mon', revenue: 1250 },
-  { date: 'Tue', revenue: 1800 },
-  { date: 'Wed', revenue: 1600 },
-  { date: 'Thu', revenue: 2100 },
-  { date: 'Fri', revenue: 2500 },
-  { date: 'Sat', revenue: 3200 },
-  { date: 'Sun', revenue: 2800 },
+  { name: 'Apr', sales: 2150 },
+  { name: 'May', sales: 2500 },
+  { name: 'Jun', sales: 2200 },
+  { name: 'Jul', sales: 2800 },
+  { name: 'Aug', sales: 3200 },
+  { name: 'Sep', sales: 2900 },
+  { name: 'Oct', sales: 3500 },
+  { name: 'Nov', sales: 3800 },
+  { name: 'Dec', sales: 4200 },
 ];
 
-export default function RevenueChart() {
-    return (
-        <Card className="shadow-lg col-span-1 lg:col-span-2 border-none bg-secondary/50">
-            <CardHeader>
-                <CardTitle>Weekly Revenue</CardTitle>
-                <CardDescription>Revenue from the last 7 days.</CardDescription>
-            </CardHeader>
-            <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} vertical={false} />
-                        <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value: number) => `${CURRENCY_SYMBOL}${value / 1000}k`} />
-                        <Tooltip
-                            contentStyle={{
-                                background: "hsl(var(--background))",
-                                border: "1px solid hsl(var(--border))",
-                                borderRadius: "var(--radius)",
-                                color: "hsl(var(--foreground))"
-                            }}
-                            cursor={{ fill: "hsl(var(--primary))", fillOpacity: 0.1 }}
-                            formatter={(value: number) => [new Intl.NumberFormat('en-US', { style: 'currency', currency: CURRENCY_SYMBOL }).format(value), 'Revenue']}
-                            labelClassName="font-bold"
-                        />
-                        <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
-            </CardContent>
-        </Card>
-    )
+export function SalesOverviewChart() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Sales Overview</CardTitle>
+        <CardDescription>4% more in 2024</CardDescription>
+      </CardHeader>
+      <CardContent className="pl-2">
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.2} />
+            <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value / 1000}k`} />
+            <Tooltip
+              contentStyle={{
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "var(--radius)",
+                color: "hsl(var(--foreground))"
+              }}
+              cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1.5 }}
+            />
+            <Line type="monotone" dataKey="sales" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--card))" }} activeDot={{ r: 6 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
 }
+// Note: This component is now named SalesOverviewChart.
+// To apply this change, you might need to rename the file from RevenueChart.tsx to SalesOverviewChart.tsx
+// and update the import in the dashboard page. For now, we are overwriting the existing file.
+export default SalesOverviewChart;
