@@ -25,6 +25,7 @@ export default function LoyaltyPage() {
   const { data: customers, isLoading, isError, error } = useQuery<Customer[]>({
     queryKey: ['customers-loyalty'],
     queryFn: fetchCustomers,
+    refetchInterval: 30000,
   });
 
   return (

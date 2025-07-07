@@ -33,6 +33,7 @@ export function TopCustomers() {
   const { data: topCustomers, isLoading, isError, error } = useQuery({
       queryKey: ['topCustomers'],
       queryFn: fetchTopCustomers,
+      refetchInterval: 30000,
   });
 
   const getInitials = (name: string) => {
