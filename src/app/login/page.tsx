@@ -49,7 +49,16 @@ export default function LoginPage() {
 
     if (signInError) {
       setIsLoading(false);
-      if (signInError.message.includes("Email not confirmed")) {
+      // Specific check for network errors
+      if (signInError.message.toLowerCase().includes("failed to fetch")) {
+        const networkErrorMsg = "Network error: Could not connect to authentication service. Please check your internet connection and try again.";
+        setFormError(networkErrorMsg);
+        toast({
+          title: "Connection Error",
+          description: networkErrorMsg,
+          variant: "destructive",
+        });
+      } else if (signInError.message.includes("Email not confirmed")) {
         setFormError("Please confirm your email address before logging in. Check your inbox for a confirmation link.");
         toast({
           title: "Email Not Confirmed",
@@ -57,10 +66,11 @@ export default function LoginPage() {
           variant: "destructive", 
         });
       } else {
-        setFormError(signInError.message || "Invalid credentials. Please try again.");
+        // Handle other auth errors like "Invalid login credentials"
+        setFormError(signInError.message || "An unexpected error occurred. Please try again.");
         toast({
           title: "Login Failed",
-          description: signInError.message || "Invalid credentials. Please try again.",
+          description: signInError.message || "An unexpected error occurred. Please try again.",
           variant: "destructive",
         });
       }
