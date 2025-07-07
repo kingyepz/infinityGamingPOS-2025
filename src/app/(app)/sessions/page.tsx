@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { differenceInMinutes } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 
 // --- Data Fetching Functions ---
 const fetchCustomers = async (): Promise<Customer[]> => {
