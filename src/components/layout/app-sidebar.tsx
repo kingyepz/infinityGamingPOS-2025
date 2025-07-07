@@ -100,7 +100,7 @@ export function AppSidebar() {
               state === 'collapsed' && "hidden"
             )}
           >
-            Infinity POS
+            Infinity Gaming Lounge
           </span>
         </Link>
       </SidebarHeader>

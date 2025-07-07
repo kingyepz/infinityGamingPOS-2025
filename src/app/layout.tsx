@@ -12,7 +12,7 @@ const fontSans = FontSans({
 })
 
 export const metadata: Metadata = {
-  title: 'Infinity Gaming Lounge POS',
+  title: 'Infinity Gaming Lounge',
   description: 'Point of Sale system for Infinity Gaming Lounge',
 };
 
