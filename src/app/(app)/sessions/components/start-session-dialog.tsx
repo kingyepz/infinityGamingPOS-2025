@@ -5,7 +5,7 @@ import React from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import type { Customer, Station } from '@/types';
+import type { Customer, Station, Game } from '@/types';
 import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +38,7 @@ import { Loader2 } from 'lucide-react';
 const sessionFormSchema = z.object({
   customerId: z.string().min(1, "Customer is required."),
   stationId: z.string().min(1, "Station is required."),
-  gameName: z.string().min(2, "Game name must be at least 2 characters.").max(100, "Game name too long."),
+  gameId: z.string().min(1, "Game is required."),
   sessionType: z.enum(['per-hour', 'per-game'], { required_error: "Billing type is required." }),
   rate: z.coerce.number().min(0, "Rate must be a non-negative number.").max(10000, "Rate seems too high."),
 });
@@ -51,16 +51,17 @@ interface StartSessionDialogProps {
   onSubmit: (data: SessionFormData) => void;
   customers: Customer[];
   stations: Station[];
+  games: Game[];
   isSubmitting: boolean;
 }
 
-export default function StartSessionDialog({ isOpen, onClose, onSubmit, customers, stations, isSubmitting }: StartSessionDialogProps) {
+export default function StartSessionDialog({ isOpen, onClose, onSubmit, customers, stations, games, isSubmitting }: StartSessionDialogProps) {
   const form = useForm<SessionFormData>({
     resolver: zodResolver(sessionFormSchema),
     defaultValues: {
       customerId: "",
       stationId: "",
-      gameName: "FIFA 24", // A sensible default
+      gameId: "",
       sessionType: "per-hour",
       rate: 200,
     },
@@ -71,7 +72,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
       form.reset({
         customerId: "",
         stationId: "",
-        gameName: "FIFA 24",
+        gameId: "",
         sessionType: "per-hour",
         rate: 200, 
       });
@@ -139,15 +140,24 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                 </FormItem>
               )}
             />
-            <FormField
+             <FormField
               control={form.control}
-              name="gameName"
+              name="gameId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Game Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. FIFA 2024, Apex Legends" {...field} disabled={isSubmitting} />
-                  </FormControl>
+                  <FormLabel>Game</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a game" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                       {games.length > 0 ? games.map(game => (
+                        <SelectItem key={game.id} value={game.id}>{game.name}</SelectItem>
+                      )) : <SelectItem value="no-games" disabled>No games available</SelectItem>}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

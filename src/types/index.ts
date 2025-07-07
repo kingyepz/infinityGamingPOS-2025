@@ -14,8 +14,16 @@ export interface Customer {
 export interface Station {
   id: string;
   name: string;
+  console_type: string;
   status: 'available' | 'in-use' | 'maintenance';
-  currentSessionId?: string;
+  created_at: string;
+}
+
+export interface Game {
+  id: string;
+  name: string;
+  genre: string;
+  created_at: string;
 }
 
 // This interface now more closely matches the 'sessions' table schema.
@@ -24,7 +32,7 @@ export interface Session {
   id: string; // uuid
   customer_id: string; // uuid
   station_id: string; // uuid
-  game_name: string; // text - used instead of game_id for now
+  game_id?: string | null; // uuid
   start_time: string; // timestamptz
   end_time?: string | null; // timestamptz
   duration_minutes?: number | null; // integer
@@ -34,13 +42,14 @@ export interface Session {
   points_earned?: number | null; // integer
   created_at: string; // timestamptz
   notes?: string | null; // text
+  payment_method?: 'cash' | 'mpesa' | null; // Assumed to exist in DB
+  mpesa_reference?: string | null; // Assumed to exist in DB
   
   // Client-side fields for UI display, state management, and calculations
   customerName: string; // Fetched via join or lookup
   stationName: string; // Fetched via join or lookup
+  game_name?: string; // Fetched via join or lookup
   rate: number; // For calculation, not stored directly in DB
-  payment_method?: 'cash' | 'mpesa' | null; // Assumed to exist in DB
-  mpesa_reference?: string | null; // Assumed to exist in DB
 }
 
 

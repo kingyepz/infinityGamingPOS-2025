@@ -4,7 +4,7 @@
 import type { Session } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Play, Clock, Loader2 } from 'lucide-react';
+import { User, Play, Clock, Loader2, Gamepad2 } from 'lucide-react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import React, { useState, useEffect } from 'react';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
@@ -35,15 +35,15 @@ export default function ActiveSessionCard({ session, onEndSession, isEnding }: A
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
             <div>
-                <CardTitle className="text-lg font-headline truncate text-primary">{session.game_name}</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">{session.stationName}</CardDescription>
+                <CardTitle className="text-lg font-headline truncate text-primary">{session.stationName}</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">{session.customerName}</CardDescription>
             </div>
         </div>
       </CardHeader>
       <CardContent className="flex-grow space-y-2.5">
-        <div className="flex items-center text-sm text-foreground/90">
-          <User className="h-4 w-4 mr-2 text-primary" />
-          <span>{session.customerName}</span>
+         <div className="flex items-center text-sm text-foreground/90">
+          <Gamepad2 className="h-4 w-4 mr-2 text-primary" />
+          <span>{session.game_name || 'No Game Specified'}</span>
         </div>
         <div className="flex items-center text-sm text-foreground/90">
           <Play className="h-4 w-4 mr-2 text-primary" />

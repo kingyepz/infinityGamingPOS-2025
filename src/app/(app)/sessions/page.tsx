@@ -1,9 +1,9 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Session, Customer, Station } from '@/types';
+import type { Session, Customer, Station, Game } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Gamepad2, Loader2 } from 'lucide-react';
 import StartSessionDialog, { type SessionFormData } from './components/start-session-dialog';
@@ -27,14 +27,18 @@ const fetchCustomers = async (): Promise<Customer[]> => {
 
 const fetchStations = async (): Promise<Station[]> => {
   const supabase = createClient();
-  // In a real app, you might join with sessions to get the status.
-  // For now, we assume a 'status' column exists on the stations table.
   const { data, error } = await supabase.from('stations').select('*').order('name');
   if (error) {
     console.error("Error fetching stations, falling back to mock. DB Error:", error.message)
-    // Fallback or re-throw as needed. For now, let's allow it to fail to be visible.
     throw new Error(`Could not fetch stations: ${error.message}. Please ensure a 'stations' table exists with RLS policies.`);
   }
+  return data;
+};
+
+const fetchGames = async (): Promise<Game[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from('games').select('*').order('name');
+  if (error) throw new Error(error.message);
   return data;
 };
 
@@ -45,7 +49,8 @@ const fetchActiveSessions = async (): Promise<Session[]> => {
       .select(`
         *,
         customer:customers(full_name),
-        station:stations(name)
+        station:stations(name),
+        game:games(name)
       `)
       .eq('payment_status', 'pending');
 
@@ -57,14 +62,15 @@ const fetchActiveSessions = async (): Promise<Session[]> => {
         id: s.id,
         customer_id: s.customer_id,
         station_id: s.station_id,
-        game_name: s.game_name || 'Unknown Game',
+        game_id: s.game_id,
         start_time: s.start_time,
         session_type: s.session_type as 'per-hour' | 'per-game',
-        rate: s.rate || 0, // This should be handled better, maybe storing rate in sessions table
+        rate: s.amount_charged || 0,
         payment_status: s.payment_status as 'pending' | 'paid' | 'cancelled',
         created_at: s.created_at,
         customerName: (s.customer as any)?.full_name || 'Unknown Customer',
         stationName: (s.station as any)?.name || 'Unknown Station',
+        game_name: (s.game as any)?.name || 'Unknown Game',
     }));
 };
 
@@ -87,11 +93,16 @@ export default function SessionsPage() {
     queryKey: ['stations'],
     queryFn: fetchStations,
   });
+
+  const { data: games, isLoading: isLoadingGames } = useQuery<Game[]>({
+    queryKey: ['games'],
+    queryFn: fetchGames,
+  });
   
-  const { data: activeSessions, isLoading: isLoadingSessions, refetch: refetchActiveSessions } = useQuery<Session[]>({
+  const { data: activeSessions, isLoading: isLoadingSessions } = useQuery<Session[]>({
       queryKey: ['activeSessions'],
       queryFn: fetchActiveSessions,
-      refetchInterval: 30000, // Poll for new sessions every 30 seconds
+      refetchInterval: 30000,
   });
   
   const availableStations = stations?.filter(s => s.status === 'available') || [];
@@ -99,15 +110,14 @@ export default function SessionsPage() {
 
   // --- Mutations ---
   const startSessionMutation = useMutation({
-    mutationFn: async (payload: Omit<Session, 'id' | 'created_at' | 'customerName' | 'stationName'>) => {
+    mutationFn: async (payload: Partial<Session>) => {
       const supabase = createClient();
       const { data, error } = await supabase.from('sessions').insert([payload]).select().single();
       if (error) throw new Error(error.message);
       return data;
     },
     onSuccess: async (data, variables) => {
-        // Also update the station's status to 'in-use'
-        await createClient().from('stations').update({ status: 'in-use' }).eq('id', variables.station_id);
+        await createClient().from('stations').update({ status: 'in-use' }).eq('id', variables.station_id!);
         
         queryClient.invalidateQueries({ queryKey: ['activeSessions'] });
         queryClient.invalidateQueries({ queryKey: ['stations'] });
@@ -138,10 +148,8 @@ export default function SessionsPage() {
       return paidSession;
     },
     onSuccess: async (paidSession) => {
-      // Free up the station
       await createClient().from('stations').update({ status: 'available' }).eq('id', paidSession.station_id);
 
-      // Award loyalty points
       if (paidSession.points_earned && paidSession.points_earned > 0) {
         const { error: loyaltyError } = await createClient().rpc('increment_loyalty_points', {
             customer_id_param: paidSession.customer_id,
@@ -172,10 +180,10 @@ export default function SessionsPage() {
     const newSessionPayload = {
       customer_id: formData.customerId,
       station_id: formData.stationId,
-      game_name: formData.gameName,
+      game_id: formData.gameId,
       session_type: formData.sessionType,
       start_time: new Date().toISOString(),
-      rate: formData.rate,
+      amount_charged: formData.rate, // Use amount_charged to store rate initially
       payment_status: 'pending' as const,
     };
     startSessionMutation.mutate(newSessionPayload);
@@ -185,21 +193,22 @@ export default function SessionsPage() {
     const endTime = new Date();
     const durationMinutes = differenceInMinutes(endTime, new Date(session.start_time));
     
-    let amount_charged = 0;
+    let finalAmountCharged = 0;
     if (session.session_type === 'per-hour') {
       const hours = Math.max(1, Math.ceil(durationMinutes / 60));
-      amount_charged = hours * session.rate;
+      finalAmountCharged = hours * (session.amount_charged || 0);
     } else {
-      amount_charged = session.rate;
+      finalAmountCharged = session.amount_charged || 0;
     }
 
-    const points_earned = Math.floor(amount_charged * POINTS_PER_CURRENCY_UNIT);
+    const points_earned = Math.floor(finalAmountCharged * POINTS_PER_CURRENCY_UNIT);
 
     setSessionToEnd({ 
       ...session, 
       end_time: endTime.toISOString(), 
       duration_minutes: durationMinutes,
-      amount_charged: amount_charged,
+      amount_charged: finalAmountCharged,
+      rate: session.amount_charged || 0, // Preserve original rate for display
       points_earned: points_earned
     });
   };
@@ -208,13 +217,13 @@ export default function SessionsPage() {
     endSessionMutation.mutate(paidSession);
   };
   
-  const isLoading = isLoadingCustomers || isLoadingStations || isLoadingSessions;
+  const isLoading = isLoadingCustomers || isLoadingStations || isLoadingSessions || isLoadingGames;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-headline font-semibold">Active Game Sessions</h2>
-        <Button onClick={() => setIsStartSessionDialogOpen(true)} disabled={availableStations.length === 0 || isLoadingCustomers}>
+        <Button onClick={() => setIsStartSessionDialogOpen(true)} disabled={availableStations.length === 0 || isLoading}>
           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
           Start New Session
         </Button>
@@ -256,6 +265,7 @@ export default function SessionsPage() {
         onSubmit={handleStartSession}
         customers={customers || []}
         stations={availableStations}
+        games={games || []}
         isSubmitting={startSessionMutation.isPending}
       />
 
