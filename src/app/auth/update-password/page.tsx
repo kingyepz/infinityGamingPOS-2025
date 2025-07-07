@@ -93,7 +93,7 @@ function UpdatePasswordPageComponent() {
         <Card className="w-full max-w-md shadow-2xl bg-card/80 backdrop-blur-sm border-border/50">
           <CardHeader className="items-center text-center">
             <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-            <CardTitle className="text-2xl font-headline text-primary-foreground">Password Updated!</CardTitle>
+            <CardTitle className="text-2xl font-headline text-foreground">Password Updated!</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-muted-foreground">Your password has been successfully updated. You can now log in using your new password.</p>
@@ -114,7 +114,7 @@ function UpdatePasswordPageComponent() {
       <Card className="w-full max-w-md shadow-2xl bg-card/80 backdrop-blur-sm border-border/50">
         <CardHeader className="items-center text-center">
           <Gamepad2 className="h-12 w-12 text-primary mb-3" />
-          <CardTitle className="text-2xl font-headline text-primary-foreground">Set New Password</CardTitle>
+          <CardTitle className="text-2xl font-headline text-foreground">Set New Password</CardTitle>
           <CardDescription className="text-muted-foreground">Enter and confirm your new password below.</CardDescription>
         </CardHeader>
         <CardContent>

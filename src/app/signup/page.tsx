@@ -30,6 +30,14 @@ export default function SignUpPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const supabase = createClient();
 
+  const form = useForm<SignUpFormValues>({
+    resolver: zodResolver(signUpFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
   const onSubmit = async (formData: SignUpFormValues) => {
     setIsLoading(true);
     setFormError(null);
@@ -58,6 +66,16 @@ export default function SignUpPage() {
     
     // The user has been created in auth.users, but they have no entry in public.users yet.
     // They must verify their email and then be assigned a role by an admin.
+    if (signUpData.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
+       setFormError("This email is already in use. Please try logging in or use a different email.");
+       toast({
+        title: "Sign Up Failed",
+        description: "This email is already in use. Please try logging in.",
+        variant: "destructive"
+       });
+       return;
+    }
+
     setIsSubmitted(true);
     toast({
       title: "Sign Up Initiated!",
@@ -70,14 +88,14 @@ export default function SignUpPage() {
       <Card className="w-full max-w-md shadow-2xl bg-card/80 backdrop-blur-sm border-border/50">
         <CardHeader className="items-center text-center">
           <Gamepad2 className="h-16 w-16 text-primary mb-4" />
-          <CardTitle className="text-3xl font-headline text-primary-foreground">Create Account</CardTitle>
+          <CardTitle className="text-3xl font-headline text-foreground">Create Account</CardTitle>
           <CardDescription className="text-muted-foreground">Join Infinity Gaming Lounge</CardDescription>
         </CardHeader>
         <CardContent>
           {isSubmitted ? (
             <div className="text-center space-y-6 py-4">
               <MailCheck className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <p className="text-lg font-medium text-primary-foreground">
+              <p className="text-lg font-medium text-foreground">
                 Verification Email Sent!
               </p>
               <p className="text-muted-foreground text-sm">

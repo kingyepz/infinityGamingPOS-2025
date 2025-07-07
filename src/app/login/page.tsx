@@ -166,7 +166,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl bg-card/80 backdrop-blur-sm border-border/50">
         <CardHeader className="items-center text-center">
           <Gamepad2 className="h-16 w-16 text-primary mb-4" />
-          <CardTitle className="text-3xl font-headline text-primary-foreground">Infinity Gaming Lounge</CardTitle>
+          <CardTitle className="text-3xl font-headline text-foreground">Infinity Gaming Lounge</CardTitle>
           <CardDescription className="text-muted-foreground">Secure Login to POS System</CardDescription>
         </CardHeader>
         <CardContent>

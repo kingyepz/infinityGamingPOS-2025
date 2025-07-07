@@ -64,13 +64,13 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md shadow-2xl bg-card/80 backdrop-blur-sm border-border/50">
         <CardHeader className="items-center text-center">
           <Gamepad2 className="h-12 w-12 text-primary mb-3" />
-          <CardTitle className="text-2xl font-headline text-primary-foreground">Reset Your Password</CardTitle>
+          <CardTitle className="text-2xl font-headline text-foreground">Reset Your Password</CardTitle>
         </CardHeader>
         <CardContent>
           {isSubmitted ? (
             <div className="text-center space-y-6 py-4">
               <MailCheck className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <p className="text-lg font-medium text-primary-foreground">
+              <p className="text-lg font-medium text-foreground">
                 Password Reset Email Sent!
               </p>
               <p className="text-muted-foreground text-sm">
