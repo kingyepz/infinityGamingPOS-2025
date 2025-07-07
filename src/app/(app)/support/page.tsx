@@ -6,7 +6,7 @@ import SupportTicketForm from './components/support-ticket-form';
 import type { SupportTicket } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tag, Lightbulb, CheckCircle2, BrainCircuit } from 'lucide-react'; // Added BrainCircuit for AI
+import { Tag, Lightbulb, CheckCircle2, Bot } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function SupportPage() {
@@ -20,7 +20,7 @@ export default function SupportPage() {
     <div className="space-y-8">
       <div>
         <div className="flex items-center space-x-3 mb-2">
-            <BrainCircuit className="h-8 w-8 text-primary" />
+            <Bot className="h-8 w-8 text-primary" />
             <h2 className="text-2xl font-headline font-semibold">AI Support Ticket Categorizer</h2>
         </div>
         <p className="text-muted-foreground">
@@ -48,7 +48,7 @@ export default function SupportPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-lg flex items-center">
-                        <Tag className="h-5 w-5 mr-2 text-primary" /> Category: <span className="ml-1 font-bold text-primary-foreground">{ticket.category || 'N/A'}</span>
+                        <Tag className="h-5 w-5 mr-2 text-primary" /> Category: <span className="ml-1 font-bold text-primary">{ticket.category || 'N/A'}</span>
                       </CardTitle>
                       <CardDescription>
                         Query submitted on {format(new Date(ticket.createdAt), 'MMM d, yyyy \'at\' h:mm a')}
@@ -79,7 +79,7 @@ export default function SupportPage() {
         </div>
       )}
        {categorizedTickets.length === 0 && (
-         <Card className="shadow-md bg-card/70">
+         <Card className="shadow-md bg-card/70 border-2 border-dashed border-border">
             <CardContent className="pt-6">
                 <div className="text-center py-6 text-muted-foreground">
                     <Lightbulb className="h-10 w-10 mx-auto mb-3 opacity-70" />

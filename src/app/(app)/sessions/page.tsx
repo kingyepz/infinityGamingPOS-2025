@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { GameSession, Customer, GameConsole } from '@/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Gamepad2 } from 'lucide-react';
 import StartSessionDialog from './components/start-session-dialog';
 import EndSessionDialog from './components/end-session-dialog';
 import ReceiptDialog from './components/receipt-dialog';
@@ -84,18 +84,12 @@ export default function SessionsPage() {
     let durationMinutes = 0;
     if (session.billingType === 'per-hour') {
       durationMinutes = differenceInMinutes(endTime, session.startTime);
-      // Ensure minimum duration is respected if applicable, e.g., bill for at least 15/30 mins
-      // For simplicity, we'll use Math.ceil for hourly blocks.
     }
     
     let subtotal = 0;
-    if (session.billingType === 'per-hour' && session.rate) {
-      // Example: Bill per full hour block.
-      // If session is 65 mins and rate is 200/hr, subtotal is 2 * 200 = 400.
-      // Or bill proportionally: (durationMinutes / 60) * session.rate
-      // Let's stick to billing per hour block for simplicity as in original code
-      subtotal = Math.max(1, Math.ceil(durationMinutes / 60)) * session.rate; // Ensure at least one hour is billed or minimum charge
-    } else if (session.billingType === 'per-game' && session.rate) {
+    if (session.billingType === 'per-hour') {
+      subtotal = Math.max(1, Math.ceil(durationMinutes / 60)) * session.rate;
+    } else { // 'per-game'
       subtotal = session.rate;
     }
 
@@ -146,10 +140,10 @@ export default function SessionsPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-10">
-          <Gamepad2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-muted-foreground text-lg">No active game sessions.</p>
-          <p className="text-sm text-muted-foreground">Click "Start New Session" to get started.</p>
+        <div className="flex flex-col items-center justify-center text-center py-16 px-4 rounded-lg bg-secondary/50 border-2 border-dashed border-border">
+          <Gamepad2 className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground text-lg font-semibold">No Active Game Sessions</p>
+          <p className="text-sm text-muted-foreground">Click "Start New Session" to get the fun started.</p>
         </div>
       )}
 
@@ -180,4 +174,3 @@ export default function SessionsPage() {
     </div>
   );
 }
-

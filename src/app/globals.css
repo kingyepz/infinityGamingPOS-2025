@@ -5,111 +5,99 @@
 
 @layer base {
   :root {
-    /* Light Mode - Derived from the dark mode specification */
+    /* Light Mode - White/Purple/Blue Theme */
     --background: 0 0% 100%; /* White */
-    --foreground: 240 4% 11%; /* Dark Charcoal */
+    --foreground: 222.2 84% 4.9%; /* Dark Blue/Black for text */
 
-    --card: 0 0% 96%; /* Very Light Gray */
-    --card-foreground: 240 4% 11%; /* Dark Charcoal */
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 222.2 84% 4.9%;
 
-    --popover: 0 0% 96%; /* Very Light Gray */
-    --popover-foreground: 240 4% 11%; /* Dark Charcoal */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 210 100% 56%; /* Electric Blue */
+    --primary: 270 90% 65%; /* Vibrant Purple */
     --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 0 0% 92%; /* Light Gray for secondary elements/buttons */
-    --secondary-foreground: 240 4% 20%; /* Darker Gray text for secondary */
+    --secondary: 210 40% 96.1%; /* Light Blue */
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 0 0% 94%; /* Lighter Gray */
-    --muted-foreground: 0 0% 40%; /* Medium-Dark Gray */
+    --muted: 210 40% 96.1%; /* Light Blue */
+    --muted-foreground: 224 71.4% 4.1%; /* Muted Dark Blue */
 
-    --accent: 210 100% 60%; /* Slightly Brighter Electric Blue for hover/focus */
-    --accent-foreground: 0 0% 100%; /* White */
+    --accent: 210 40% 98%; /* Very Light Blue for hover */
+    --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 354 70% 53%; /* Crimson Red */
-    --destructive-foreground: 0 0% 100%; /* White */
-    
-    --success: 150 100% 45%; /* Slightly darker Neon Green for light mode */
-    --success-foreground: 0 0% 100%; /* White */
-    
-    --warning: 45 100% 48%; /* Slightly darker Amber for light mode */
-    --warning-foreground: 0 0% 100%; /* White */
+    --destructive: 0 84.2% 60.2%; /* Red */
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 87%; /* Light Gray Border */
-    --input: 0 0% 96%; /* Light Gray Input Background */
-    --ring: 210 100% 56%; /* Electric Blue for focus rings */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 270 90% 65%; /* Vibrant Purple */
 
     --radius: 0.5rem;
 
     /* Sidebar specific variables for light mode */
-    --sidebar-background: 0 0% 97%; /* Off-white/Very light gray */
-    --sidebar-foreground: 240 4% 20%; /* Dark Gray text */
-    --sidebar-primary: 210 100% 56%; /* Electric Blue */
-    --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 0 0% 90%; /* Light gray for hover */
-    --sidebar-accent-foreground: 210 100% 40%; /* Darker blue text on hover */
-    --sidebar-border: 0 0% 85%; /* Light gray border for sidebar elements */
-    --sidebar-ring: 210 100% 56%; /* Ring color for sidebar focus */
+    --sidebar-background: 0 0% 98%; /* Off-white, fixes contrast issue */
+    --sidebar-foreground: 222.2 84% 4.9%; /* Dark text, fixes font color issue */
+    --sidebar-primary: 270 90% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 94%; /* Slightly darker blue for hover */
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 270 90% 65%;
 
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 270 90% 65%; /* Purple */
+    --chart-2: 195 53% 79%; /* Light Blue */
+    --chart-3: 0 84.2% 60.2%; /* Red */
+    --chart-4: 48 95.8% 53.1%; /* Yellow */
+    --chart-5: 142.1 76.2% 36.3%; /* Green */
   }
 
   .dark {
-    /* Dark Mode - As per user specification */
-    --background: 240 4% 5%; /* Jet Black (#0B0B0C) */
-    --foreground: 0 0% 90%; /* Light Gray (#E5E5E5) */
+    /* Dark Mode - Purple/Blue Theme */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
 
-    --card: 240 4% 17%; /* Dark Grey (#2A2A2E) */
-    --card-foreground: 0 0% 90%; /* Light Gray (#E5E5E5) */
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 240 4% 17%; /* Dark Grey (#2A2A2E) */
-    --popover-foreground: 0 0% 90%; /* Light Gray (#E5E5E5) */
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 210 100% 56%; /* Electric Blue (#1E90FF) */
-    --primary-foreground: 0 0% 100%; /* White (#FFFFFF) */
+    --primary: 270 90% 65%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 240 7% 25%; /* Slate (#3B3B44) */
-    --secondary-foreground: 0 0% 90%; /* Light Gray (#E5E5E5) */
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 0 0% 24%; /* Soft Gray (#3C3C3C) */
-    --muted-foreground: 0 0% 63%; /* Medium Gray (#A0A0A0) */
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 210 100% 60%; /* Slightly Brighter Electric Blue for hover/focus */
-    --accent-foreground: 0 0% 100%; /* White (#FFFFFF) */
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
 
-    --destructive: 354 70% 53%; /* Crimson Red (#DC3545) */
-    --destructive-foreground: 0 0% 100%; /* White (#FFFFFF) */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
 
-    --success: 150 100% 50%; /* Neon Green (#00FF7F) */
-    --success-foreground: 240 4% 5%; /* Jet Black for text on Neon Green */
-    
-    --warning: 45 100% 51%; /* Amber (#FFC107) */
-    --warning-foreground: 240 4% 5%; /* Jet Black for text on Amber */
-
-    --border: 0 0% 24%; /* Soft Gray (#3C3C3C) */
-    --input: 240 4% 11%; /* Dark Charcoal (#1C1C1E) */
-    --ring: 210 100% 56%; /* Electric Blue (#1E90FF) */
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 270 90% 75%;
 
     /* Sidebar specific variables for dark mode */
-    --sidebar-background: 240 4% 11%; /* Dark Charcoal, slightly lighter than main bg */
-    --sidebar-foreground: 0 0% 80%; /* Lighter Gray text */
-    --sidebar-primary: 210 100% 56%; /* Electric Blue */
-    --sidebar-primary-foreground: 0 0% 100%; /* White */
-    --sidebar-accent: 240 7% 25%; /* Slate for hover */
-    --sidebar-accent-foreground: 0 0% 95%; /* Very Light Gray text on hover */
-    --sidebar-border: 0 0% 15%; /* Darker Soft Gray for sidebar borders */
-    --sidebar-ring: 210 100% 56%; /* Ring color for sidebar focus */
-    
-    --chart-1: 12 76% 61%; /* Keeping existing chart colors for now */
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --sidebar-background: 222.2 84% 3.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 270 90% 65%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 270 90% 75%;
+
+    --chart-1: 270 90% 65%;
+    --chart-2: 195 53% 79%;
+    --chart-3: 0 84.2% 60.2%;
+    --chart-4: 48 95.8% 53.1%;
+    --chart-5: 142.1 76.2% 36.3%;
   }
 }
 

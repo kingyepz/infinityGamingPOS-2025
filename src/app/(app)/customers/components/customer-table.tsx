@@ -4,7 +4,7 @@
 import type { Customer } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2 } from 'lucide-react'; // Removed Eye as it was not used
+import { Edit, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
@@ -14,13 +14,19 @@ interface CustomerTableProps {
   onDelete: (customer: Customer) => void;
 }
 
+const getBadgeVariant = (points: number): 'default' | 'secondary' | 'destructive' => {
+    if (points > 200) return 'default';
+    if (points > 50) return 'secondary';
+    return 'destructive';
+}
+
 export default function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProps) {
   if (!customers || customers.length === 0) {
     return <p className="text-center text-muted-foreground py-8">No customers registered yet.</p>;
   }
 
   return (
-    <div className="rounded-lg border shadow-sm overflow-x-auto">
+    <div className="rounded-lg border shadow-sm overflow-x-auto bg-card">
       <Table>
         <TableHeader>
           <TableRow>
@@ -39,7 +45,7 @@ export default function CustomerTable({ customers, onEdit, onDelete }: CustomerT
               <TableCell className="whitespace-nowrap">{customer.phone}</TableCell>
               <TableCell className="whitespace-nowrap">{customer.email}</TableCell>
               <TableCell className="text-right whitespace-nowrap">
-                <Badge variant={customer.loyaltyPoints > 100 ? "default" : "secondary"}>
+                <Badge variant={getBadgeVariant(customer.loyaltyPoints)}>
                   {customer.loyaltyPoints}
                 </Badge>
               </TableCell>

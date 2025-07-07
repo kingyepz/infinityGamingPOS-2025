@@ -6,7 +6,7 @@ export interface Customer {
   email: string;
   loyaltyPoints: number;
   createdAt: Date;
-  sessionHistory?: Pick<GameSession, 'id' | 'gameName' | 'startTime' | 'finalAmount' | 'pointsAwarded'>[];
+  sessionHistory?: Pick<GameSession, 'id' | 'gameName' | 'startTime' | 'totalAmount' | 'pointsAwarded'>[];
 }
 
 export interface GameConsole {
@@ -17,7 +17,7 @@ export interface GameConsole {
 }
 
 export interface GameSession {
-  id: string;
+  id:string;
   customerId: string;
   customerName: string;
   consoleId: string;
@@ -26,7 +26,7 @@ export interface GameSession {
   startTime: Date;
   endTime?: Date;
   billingType: 'per-hour' | 'per-game';
-  rate?: number; // Hourly rate or per-game cost
+  rate: number; // Hourly rate or per-game cost - Made this required
   durationMinutes?: number; // For hourly billing
   subtotalAmount?: number;
   vatAmount?: number;

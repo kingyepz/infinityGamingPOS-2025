@@ -4,14 +4,14 @@
 import React, { useState, useEffect } from 'react';
 import type { Customer } from '@/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react'; // Removed Edit, Trash2 as they are in CustomerTable
+import { PlusCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'; // Removed DialogFooter, DialogClose as they are in CustomerForm
+} from '@/components/ui/dialog';
 import CustomerForm from './components/customer-form';
 import CustomerTable from './components/customer-table';
 import { useToast } from "@/hooks/use-toast";
@@ -24,7 +24,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"; // Removed AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -35,10 +35,11 @@ export default function CustomersPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Mock initial data
+    // Mock initial data with varied loyalty points
     const initialCustomers: Customer[] = [
-      { id: 'cust1', name: 'John Doe', phone: '0712345678', email: 'john.doe@example.com', loyaltyPoints: 120, createdAt: new Date(), sessionHistory: [] },
+      { id: 'cust1', name: 'John Doe', phone: '0712345678', email: 'john.doe@example.com', loyaltyPoints: 250, createdAt: new Date(), sessionHistory: [] },
       { id: 'cust2', name: 'Jane Smith', phone: '0723456789', email: 'jane.smith@example.com', loyaltyPoints: 75, createdAt: new Date(), sessionHistory: []  },
+      { id: 'cust3', name: 'Alex Green', phone: '0734567890', email: 'alex.green@example.com', loyaltyPoints: 30, createdAt: new Date(), sessionHistory: [] },
     ];
     setCustomers(initialCustomers);
   }, []);

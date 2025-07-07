@@ -4,9 +4,9 @@
 import type { GameSession } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Gamepad2 as GamepadIcon, Clock, Play, MoreHorizontal } from 'lucide-react'; // Renamed Gamepad to GamepadIcon
-import { format, formatDistanceToNowStrict } from 'date-fns';
-import React, { useState, useEffect } from 'react'; // Explicitly import useState and useEffect
+import { User, Play, Clock } from 'lucide-react';
+import { formatDistanceToNowStrict } from 'date-fns';
+import React, { useState, useEffect } from 'react';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 
@@ -30,11 +30,9 @@ export default function ActiveSessionCard({ session, onEndSession }: ActiveSessi
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
             <div>
-                <CardTitle className="text-lg font-headline truncate text-primary-foreground">{session.gameName}</CardTitle>
+                <CardTitle className="text-lg font-headline truncate text-primary">{session.gameName}</CardTitle>
                 <CardDescription className="text-sm text-muted-foreground">{session.consoleName}</CardDescription>
             </div>
-            {/* Placeholder for potential quick actions icon if needed */}
-            {/* <MoreHorizontal className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-foreground" /> */}
         </div>
       </CardHeader>
       <CardContent className="flex-grow space-y-2.5">
@@ -48,7 +46,7 @@ export default function ActiveSessionCard({ session, onEndSession }: ActiveSessi
         </div>
         <div className="flex items-center text-sm text-foreground/90">
           <Clock className="h-4 w-4 mr-2 text-primary" />
-          <span>Started: {format(new Date(session.startTime), 'p')} ({elapsedTime})</span>
+          <span>Started: {elapsedTime} ago</span>
         </div>
       </CardContent>
       <CardFooter className="pt-3">
