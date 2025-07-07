@@ -8,15 +8,15 @@ import { AppSidebar } from './app-sidebar';
 export function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider defaultOpen>
-      <Sidebar side="left" variant="sidebar" collapsible="icon" className="border-r border-border/60">
-        <AppSidebar />
-      </Sidebar>
-      <SidebarRail />
-      <SidebarInset>
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
-          {children}
-        </main>
-      </SidebarInset>
+      <div className="flex h-screen bg-background">
+        <Sidebar side="left" variant="sidebar" collapsible="icon" className="border-r border-border/60">
+          <AppSidebar />
+        </Sidebar>
+        <SidebarRail />
+        <SidebarInset className="flex flex-1 flex-col overflow-hidden">
+            {children}
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

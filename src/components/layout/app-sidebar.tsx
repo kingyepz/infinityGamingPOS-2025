@@ -17,22 +17,75 @@ import {
   Gamepad2 as GamepadIcon,
   BrainCircuit,
   ShieldAlert,
-  DollarSign
+  Landmark,
+  Warehouse,
+  Swords,
+  Settings,
+  CircleUser,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from 'react';
+import type { User } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
+
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/admin', label: 'Admin Panel', icon: ShieldAlert, roles: ['admin'] },
-  { href: '/dashboard/cashier', label: 'Cashier Panel', icon: DollarSign, roles: ['admin', 'cashier'] },
-  { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/sessions', label: 'Game Sessions', icon: GamepadIcon },
-  { href: '/support', label: 'Support Tickets', icon: BrainCircuit },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'cashier', 'supervisor'] },
+  { href: '/customers', label: 'Customers', icon: Users, roles: ['admin', 'cashier', 'supervisor'] },
+  { href: '/sessions', label: 'Game Sessions', icon: GamepadIcon, roles: ['admin', 'cashier', 'supervisor'] },
+  { href: '/payments', label: 'Payments', icon: Landmark, roles: ['admin', 'cashier', 'supervisor'], comingSoon: true },
+  { href: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'supervisor'], comingSoon: true },
+  { href: '/tournaments', label: 'Tournaments', icon: Swords, roles: ['admin', 'supervisor'], comingSoon: true },
+  { href: '/support', label: 'AI Support', icon: BrainCircuit, roles: ['admin', 'cashier', 'supervisor'] },
+  { href: '/users', label: 'User Management', icon: CircleUser, roles: ['admin'], comingSoon: true },
+  { href: '/settings', label: 'Settings', icon: Settings, roles: ['admin'], comingSoon: true },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const fetchUserRole = async () => {
+      setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        if (data) {
+          setUserRole(data.role);
+        } else {
+            console.warn("Sidebar: Could not fetch user role.", error?.message)
+            setUserRole(null); // No specific role found
+        }
+      }
+      setIsLoading(false);
+    };
+
+    fetchUserRole();
+     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_OUT') {
+        fetchUserRole();
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  const filteredNavItems = React.useMemo(() => {
+    if (isLoading || !userRole) {
+      return []; // Or a skeleton state
+    }
+    return navItems.filter(item => item.roles.includes(userRole));
+  }, [userRole, isLoading]);
 
   return (
     <>
@@ -53,25 +106,33 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-2">
         <SidebarMenu>
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || 
-                             (item.href !== '/dashboard' && pathname.startsWith(item.href)) ||
-                             (item.href === '/dashboard' && (pathname === '/dashboard/admin' || pathname === '/dashboard/cashier') && pathname !== '/dashboard') === false;
+          {isLoading && Array.from({ length: 5 }).map((_, index) => (
+             <SidebarMenuItem key={index} className="px-2">
+                <div className="h-12 w-full bg-muted/50 animate-pulse rounded-md" />
+             </SidebarMenuItem>
+          ))}
+          {!isLoading && filteredNavItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
 
             return (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} legacyBehavior passHref>
+                <Link href={item.comingSoon ? "#" : item.href} legacyBehavior passHref>
                   <SidebarMenuButton
                     isActive={isActive}
                     tooltip={{ children: item.label, className: "font-body" }}
                     className="font-body text-base"
                     size="lg"
+                    disabled={item.comingSoon}
+                    aria-disabled={item.comingSoon}
                   >
                     <item.icon className={cn(
                       "h-5 w-5",
                       isActive ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground"
                      )} />
                     <span>{item.label}</span>
+                     {item.comingSoon && state === 'expanded' && (
+                        <span className="ml-auto text-xs bg-yellow-400/20 text-yellow-500 px-2 py-0.5 rounded-md">Soon</span>
+                    )}
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>

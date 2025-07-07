@@ -10,28 +10,49 @@ import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ThemeToggle } from '@/components/theme-toggle';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from '../ui/button';
+import { LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const getPageTitle = (pathname: string): string => {
-  if (pathname === '/dashboard') return 'Dashboard Overview';
-  if (pathname === '/dashboard/admin') return 'Admin Dashboard';
-  if (pathname === '/dashboard/cashier') return 'Cashier Dashboard';
+  if (pathname.startsWith('/dashboard')) return 'Dashboard';
   if (pathname.startsWith('/customers')) return 'Customer Management';
   if (pathname.startsWith('/sessions')) return 'Game Session Management';
-  if (pathname.startsWith('/support')) return 'Customer Support Tickets';
-  return 'Infinity Gaming Lounge POS'; // Default or for /
+  if (pathname.startsWith('/support')) return 'AI Support Center';
+  if (pathname.startsWith('/payments')) return 'Payments & Transactions';
+  if (pathname.startsWith('/inventory')) return 'Inventory Management';
+  if (pathname.startsWith('/tournaments')) return 'Tournament Hub';
+  if (pathname.startsWith('/users')) return 'User Management';
+  if (pathname.startsWith('/settings')) return 'System Settings';
+  return 'Infinity Gaming Lounge';
 };
 
 
 export function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const title = getPageTitle(pathname);
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [userFullName, setUserFullName] = useState<string | null>(null);
   const [userRoleForDisplay, setUserRoleForDisplay] = useState<string | null>(null);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const supabase = createClient();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   useEffect(() => {
-    const supabase = createClient();
     const fetchUserAndProfile = async () => {
       setIsLoadingUser(true);
       const { data: { user: currentAuthUser } } = await supabase.auth.getUser();
@@ -46,7 +67,7 @@ export function AppHeader() {
           .single();
 
         if (userDbError) {
-          console.warn(`AppHeader: Error fetching user details from public.users for ${currentAuthUser.id}:`, userDbError.message);
+          console.warn(`AppHeader: Error fetching user details for ${currentAuthUser.id}:`, userDbError.message);
           setUserFullName(currentAuthUser.email); // Fallback to email
           setUserRoleForDisplay(null);
         } else if (userData) {
@@ -67,14 +88,13 @@ export function AppHeader() {
     fetchUserAndProfile();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      // Re-fetch profile on auth change
       fetchUserAndProfile();
     });
 
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return '';
@@ -86,40 +106,48 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
       <div className="flex items-center gap-4">
         <SidebarTrigger className="md:hidden" />
         <h2 className="text-lg font-headline font-semibold text-foreground">{title}</h2>
       </div>
       <div className="flex items-center gap-4">
-        {isLoadingUser ? (
-          <>
-            <Skeleton className="h-9 w-9 rounded-full" />
-            <Skeleton className="h-4 w-32" />
-          </>
+        <ThemeToggle />
+         {isLoadingUser ? (
+          <Skeleton className="h-9 w-9 rounded-full" />
         ) : authUser ? (
-          <>
-            <Avatar className="h-9 w-9">
-              <AvatarImage src="https://placehold.co/100x100.png" alt={userFullName || "User Avatar"} data-ai-hint="user avatar" />
-              <AvatarFallback>
-                {userRoleForDisplay === 'admin' ? <ShieldCheck className="h-5 w-5" /> : (getInitials(userFullName) || <UserCircle className="h-5 w-5" />)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col text-xs">
-              <span className="font-medium text-foreground truncate max-w-[150px] sm:max-w-[200px]" title={userFullName || authUser.email || ''}>
-                {userFullName || authUser.email || 'User'}
-              </span>
-              {userRoleForDisplay && (
-                <span className="text-primary font-semibold capitalize">
-                  {userRoleForDisplay}
-                </span>
-              )}
-            </div>
-          </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src="https://placehold.co/100x100.png" alt={userFullName || "User Avatar"} data-ai-hint="user avatar" />
+                      <AvatarFallback>
+                        {userRoleForDisplay === 'admin' ? <ShieldCheck className="h-5 w-5" /> : (getInitials(userFullName) || <UserCircle className="h-5 w-5" />)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none truncate" title={userFullName || authUser.email || ''}>
+                      {userFullName || authUser.email || 'User'}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground capitalize">
+                      {userRoleForDisplay}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
         ) : (
           <UserCircle className="h-6 w-6 text-muted-foreground" />
         )}
-        <ThemeToggle />
       </div>
     </header>
   );
