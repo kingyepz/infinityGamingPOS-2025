@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import CustomerForm from './components/customer-form';
+import CustomerForm, { type CustomerFormData } from './components/customer-form';
 import CustomerTable from './components/customer-table';
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -24,15 +24,15 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Explicitly define payloads for clarity and robustness
-type AddCustomerPayload = Pick<Customer, 'full_name' | 'phone_number' | 'email'>;
-type UpdateCustomerPayload = Pick<Customer, 'id' | 'full_name' | 'phone_number' | 'email'>;
+type AddCustomerPayload = Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'join_date' | 'loyalty_points' | 'loyalty_tier'>;
+type UpdateCustomerPayload = Pick<Customer, 'id' | 'full_name' | 'phone_number' | 'email' | 'loyalty_points' | 'loyalty_tier'>;
 
 // Define functions to interact with Supabase
-const fetchCustomers = async () => {
+const fetchCustomers = async (): Promise<Customer[]> => {
   const supabase = createClient();
   const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return data as Customer[];
+  return data;
 };
 
 const addCustomer = async (customer: AddCustomerPayload) => {
@@ -45,9 +45,6 @@ const addCustomer = async (customer: AddCustomerPayload) => {
 const updateCustomer = async (customer: UpdateCustomerPayload) => {
   const supabase = createClient();
   const { id, ...updateData } = customer;
-  // Supabase automatically updates `updated_at` if a trigger is configured.
-  // If not, you might need to add `updated_at: new Date().toISOString()` to updateData.
-  // For now, we only update the form fields.
   const { data, error } = await supabase.from('customers').update(updateData).eq('id', id).select().single();
   if (error) throw new Error(error.message);
   return data;
@@ -131,11 +128,23 @@ export default function CustomersPage() {
     }
   };
 
-  const handleFormSubmit = (formData: { full_name: string; phone_number: string; email: string; }) => {
+  const handleFormSubmit = (formData: CustomerFormData) => {
     if (selectedCustomer) {
-      updateMutation.mutate({ id: selectedCustomer.id, ...formData });
+      updateMutation.mutate({
+        id: selectedCustomer.id,
+        full_name: formData.full_name,
+        phone_number: formData.phone_number,
+        email: formData.email,
+        loyalty_points: formData.loyalty_points ?? selectedCustomer.loyalty_points,
+        loyalty_tier: formData.loyalty_tier ?? selectedCustomer.loyalty_tier,
+      });
     } else {
-      addMutation.mutate(formData);
+      // For new customers, we only send the essential fields and let the DB handle defaults.
+      addMutation.mutate({
+        full_name: formData.full_name,
+        phone_number: formData.phone_number,
+        email: formData.email,
+      });
     }
   };
 
@@ -155,18 +164,25 @@ export default function CustomersPage() {
               <PlusCircle className="mr-2 h-4 w-4" /> Add Customer
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{selectedCustomer ? 'Edit Customer' : 'Add New Customer'}</DialogTitle>
             </DialogHeader>
             <CustomerForm 
               onSubmit={handleFormSubmit} 
-              defaultValues={selectedCustomer ? { full_name: selectedCustomer.full_name, phone_number: selectedCustomer.phone_number, email: selectedCustomer.email } : undefined} 
+              defaultValues={selectedCustomer ? { 
+                  full_name: selectedCustomer.full_name, 
+                  phone_number: selectedCustomer.phone_number, 
+                  email: selectedCustomer.email,
+                  loyalty_points: selectedCustomer.loyalty_points,
+                  loyalty_tier: selectedCustomer.loyalty_tier,
+              } : undefined} 
               onCancel={() => {
                 setIsFormOpen(false);
                 setSelectedCustomer(null);
               }}
               isSubmitting={isMutating}
+              isEditMode={!!selectedCustomer}
             />
           </DialogContent>
         </Dialog>

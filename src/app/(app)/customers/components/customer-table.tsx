@@ -21,8 +21,10 @@ const getBadgeVariant = (points: number): 'default' | 'secondary' | 'destructive
     return 'destructive';
 }
 
-const getTierClassName = (tier: string = 'bronze'): string => {
+const getTierClassName = (tier: string = 'Bronze'): string => {
     switch (tier.toLowerCase()) {
+      case 'platinum':
+        return 'bg-sky-200 text-sky-800 border-sky-400 hover:bg-sky-200/80';
       case 'gold':
         return 'bg-yellow-400 text-yellow-900 border-yellow-500 hover:bg-yellow-400/80';
       case 'silver':

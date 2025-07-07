@@ -14,9 +14,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 const phoneRegex = new RegExp(
   /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
@@ -26,18 +34,21 @@ const customerFormSchema = z.object({
   full_name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   phone_number: z.string().regex(phoneRegex, 'Invalid phone number').min(10, { message: "Phone number must be at least 10 digits."}),
   email: z.string().email({ message: "Invalid email address." }),
+  loyalty_points: z.coerce.number().int().min(0, "Points cannot be negative.").optional(),
+  loyalty_tier: z.enum(['Bronze', 'Silver', 'Gold', 'Platinum']).optional(),
 });
 
-type CustomerFormData = z.infer<typeof customerFormSchema>;
+export type CustomerFormData = z.infer<typeof customerFormSchema>;
 
 interface CustomerFormProps {
   onSubmit: (data: CustomerFormData) => void;
   defaultValues?: Partial<CustomerFormData>;
   onCancel: () => void;
   isSubmitting: boolean;
+  isEditMode: boolean;
 }
 
-export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubmitting }: CustomerFormProps) {
+export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubmitting, isEditMode }: CustomerFormProps) {
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
@@ -99,6 +110,55 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubm
             </FormItem>
           )}
         />
+
+        {isEditMode && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground">Loyalty Program</h3>
+              <div className="grid grid-cols-2 gap-4">
+                 <FormField
+                  control={form.control}
+                  name="loyalty_points"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Loyalty Points</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} disabled={isSubmitting} onChange={event => field.onChange(+event.target.value)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="loyalty_tier"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Loyalty Tier</FormLabel>
+                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a tier" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Bronze">Bronze</SelectItem>
+                          <SelectItem value="Silver">Silver</SelectItem>
+                          <SelectItem value="Gold">Gold</SelectItem>
+                          <SelectItem value="Platinum">Platinum</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            <Separator />
+          </>
+        )}
+
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
           <Button type="submit" disabled={isSubmitting}>
