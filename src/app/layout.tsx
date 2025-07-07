@@ -3,7 +3,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Inter as FontSans } from "next/font/google"
 import { cn } from "@/lib/utils"
-import ClientToaster from '@/components/client-toaster'; // Import the new client component
+import ClientToaster from '@/components/client-toaster';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -35,8 +36,15 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        {children}
-        <ClientToaster /> {/* Use the new client component */}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <ClientToaster />
+        </ThemeProvider>
       </body>
     </html>
   );

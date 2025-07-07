@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const getPageTitle = (pathname: string): string => {
   if (pathname === '/dashboard') return 'Dashboard Overview';
@@ -90,7 +91,7 @@ export function AppHeader() {
         <SidebarTrigger className="md:hidden" />
         <h2 className="text-lg font-headline font-semibold text-foreground">{title}</h2>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {isLoadingUser ? (
           <>
             <Skeleton className="h-9 w-9 rounded-full" />
@@ -118,6 +119,7 @@ export function AppHeader() {
         ) : (
           <UserCircle className="h-6 w-6 text-muted-foreground" />
         )}
+        <ThemeToggle />
       </div>
     </header>
   );

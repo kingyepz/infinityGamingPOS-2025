@@ -50,7 +50,7 @@ export function AppSidebar() {
         <Link href="/dashboard" className="flex items-center gap-2">
           <GamepadIcon className="h-8 w-8 text-primary" />
           {state === 'expanded' && (
-            <h1 className="text-xl font-headline font-semibold text-sidebar-foreground">Infinity Gaming Lounge POS</h1>
+            <h1 className="text-xl font-headline font-semibold text-primary">Infinity Gaming Lounge POS</h1>
           )}
         </Link>
       </SidebarHeader>
