@@ -97,7 +97,7 @@ export function AppSidebar() {
           </div>
           <span
             className={cn(
-              "text-lg font-bold font-headline text-foreground tracking-tight",
+              "text-lg font-bold font-headline text-sidebar-foreground tracking-tight",
               state === 'collapsed' && "hidden"
             )}
           >
