@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from "react-hook-form";
@@ -28,6 +28,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [isInIframe, setIsInIframe] = useState(false);
   const supabase = createClient();
 
   const form = useForm<LoginFormValues>({
@@ -37,6 +38,13 @@ export default function LoginPage() {
       password: "",
     },
   });
+
+  useEffect(() => {
+    // Check if the page is running inside an iframe
+    if (typeof window !== 'undefined' && window.self !== window.top) {
+      setIsInIframe(true);
+    }
+  }, []);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -255,13 +263,24 @@ export default function LoginPage() {
               </span>
             </div>
           </div>
-
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
-            <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4">
-              <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-4.55 1.9-3.47 0-6.3-2.89-6.3-6.4s2.83-6.4 6.3-6.4c1.93 0 3.26.77 4.27 1.74l2.54-2.54C18.14 2.1 15.47 1 12.48 1 7.02 1 3 5.02 3 10.5s4.02 9.5 9.48 9.5c2.76 0 5.1-1 6.87-2.85 1.9-1.9 2.54-4.55 2.54-6.87 0-.6-.05-1.18-.15-1.72H12.48z" fill="currentColor"/>
-            </svg>
-            Sign in with Google
-          </Button>
+          
+          {isInIframe ? (
+             <div className="text-center p-2 border border-dashed rounded-md">
+              <p className="text-sm text-muted-foreground">
+                Google Sign-In cannot be used in this embedded view.
+              </p>
+              <p className="text-xs text-muted-foreground/80">
+                Please open the app in a new browser tab to test this feature.
+              </p>
+            </div>
+          ) : (
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+              <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4">
+                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-4.55 1.9-3.47 0-6.3-2.89-6.3-6.4s2.83-6.4 6.3-6.4c1.93 0 3.26.77 4.27 1.74l2.54-2.54C18.14 2.1 15.47 1 12.48 1 7.02 1 3 5.02 3 10.5s4.02 9.5 9.48 9.5c2.76 0 5.1-1 6.87-2.85 1.9-1.9 2.54-4.55 2.54-6.87 0-.6-.05-1.18-.15-1.72H12.48z" fill="currentColor"/>
+              </svg>
+              Sign in with Google
+            </Button>
+          )}
 
         </CardContent>
         <CardFooter className="flex flex-col items-center space-y-3 pt-4">
