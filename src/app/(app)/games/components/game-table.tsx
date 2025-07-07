@@ -39,7 +39,7 @@ export default function GameTable({ games, onEdit, onDelete }: GameTableProps) {
               <TableCell className="whitespace-nowrap">{game.developer || 'N/A'}</TableCell>
               <TableCell className="whitespace-nowrap">{game.publisher || 'N/A'}</TableCell>
               <TableCell className="whitespace-nowrap">
-                {game.release_date ? format(new Date(game.release_date), 'PPP') : 'N/A'}
+                {game.release_date ? format(new Date(game.release_date), 'dd/MM/yyyy') : 'N/A'}
               </TableCell>
               <TableCell className="text-right space-x-2 whitespace-nowrap">
                 <Button variant="outline" size="icon" onClick={() => onEdit(game)} aria-label={`Edit ${game.name}`}>
