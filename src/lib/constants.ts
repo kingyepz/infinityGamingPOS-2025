@@ -1,11 +1,11 @@
 
-import type { GameConsole, Staff } from '@/types';
+import type { Station, Staff } from '@/types';
 
-export const VAT_RATE = 0.16; // 16%
+export const VAT_RATE = 0.16; // 16% - This can be used for display if needed, but not for DB storage as per new schema
 export const POINTS_PER_CURRENCY_UNIT = 0.1; // e.g., 1 point per 10 currency units spent
 export const CURRENCY_SYMBOL = 'KES'; // Kenyan Shilling, or your local currency
 
-export const MOCK_GAME_CONSOLES: GameConsole[] = [
+export const MOCK_STATIONS: Station[] = [
   { id: 'ps5-1', name: 'PlayStation 5 - Console 1', status: 'in-use' },
   { id: 'ps5-2', name: 'PlayStation 5 - Console 2', status: 'available' },
   { id: 'xbox-1', name: 'Xbox Series X - Console 1', status: 'in-use' },

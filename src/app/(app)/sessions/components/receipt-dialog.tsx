@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { GameSession } from '@/types';
+import type { Session } from '@/types';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,15 +12,15 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { Printer, Bot, Gamepad2 } from 'lucide-react';
-import { BUSINESS_DETAILS, CURRENCY_SYMBOL, VAT_RATE } from '@/lib/constants';
+import { Printer, Gamepad2 } from 'lucide-react';
+import { BUSINESS_DETAILS, CURRENCY_SYMBOL } from '@/lib/constants';
 import { format } from 'date-fns';
 import React, { useRef } from 'react';
 
 interface ReceiptDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  session: GameSession;
+  session: Session;
 }
 
 export default function ReceiptDialog({ isOpen, onClose, session }: ReceiptDialogProps) {
@@ -70,7 +70,6 @@ export default function ReceiptDialog({ isOpen, onClose, session }: ReceiptDialo
             <script>
               setTimeout(() => { 
                 window.print();
-                // Adding a small delay before closing to ensure print dialog appears
                 setTimeout(() => { window.close(); }, 500);
               }, 250);
             </script>
@@ -98,9 +97,8 @@ export default function ReceiptDialog({ isOpen, onClose, session }: ReceiptDialo
           <DialogDescription>Transaction details for {session.customerName}.</DialogDescription>
         </DialogHeader>
         
-        <div ref={receiptRef} className="py-4 text-xs font-code bg-white text-black"> {/* Ensures printable styles are distinct */}
+        <div ref={receiptRef} className="py-4 text-xs font-code bg-white text-black">
           <div className="header p-header">
-            {/* Using Gamepad2 as a more fitting logo */}
             <div className="p-logo"><Gamepad2 className="h-8 w-8 mx-auto text-primary mb-1" /></div>
             <h1 className="p-h1">{BUSINESS_DETAILS.name}</h1>
             <p className="p-p">{BUSINESS_DETAILS.address}</p>
@@ -118,28 +116,26 @@ export default function ReceiptDialog({ isOpen, onClose, session }: ReceiptDialo
           
           <hr className="p-hr" />
           <p className="font-semibold my-1 p-p">Session Details:</p>
-          <DetailItem label="Console:" value={session.consoleName} />
-          <DetailItem label="Game:" value={session.gameName} />
-          <DetailItem label="Start:" value={format(new Date(session.startTime), 'HH:mm')} />
-          {session.endTime && <DetailItem label="End:" value={format(new Date(session.endTime), 'HH:mm')} />}
-          {session.billingType === 'per-hour' && session.durationMinutes != null && (
-            <DetailItem label="Duration:" value={`${session.durationMinutes} min`} />
+          <DetailItem label="Station:" value={session.stationName} />
+          <DetailItem label="Game:" value={session.game_name} />
+          <DetailItem label="Start:" value={format(new Date(session.start_time), 'HH:mm')} />
+          {session.end_time && <DetailItem label="End:" value={format(new Date(session.end_time), 'HH:mm')} />}
+          {session.session_type === 'per-hour' && session.duration_minutes != null && (
+            <DetailItem label="Duration:" value={`${session.duration_minutes} min`} />
           )}
-          <DetailItem label="Rate:" value={`${CURRENCY_SYMBOL} ${session.rate} ${session.billingType === 'per-hour' ? '/hr' : '(Fixed)'}`} />
+          <DetailItem label="Rate:" value={`${CURRENCY_SYMBOL} ${session.rate} ${session.session_type === 'per-hour' ? '/hr' : '(Fixed)'}`} />
 
           <hr className="p-hr" />
           <div className="total-section p-total-section">
-            <DetailItem label="Subtotal:" value={`${CURRENCY_SYMBOL} ${session.subtotalAmount?.toFixed(2) || '0.00'}`} />
-            <DetailItem label={`VAT (${VAT_RATE * 100}%):`} value={`${CURRENCY_SYMBOL} ${session.vatAmount?.toFixed(2) || '0.00'}`} />
-            <DetailItem label="Total:" value={`${CURRENCY_SYMBOL} ${session.totalAmount?.toFixed(2) || '0.00'}`} isBold />
+            <DetailItem label="Total Amount:" value={`${CURRENCY_SYMBOL} ${session.amount_charged?.toFixed(2) || '0.00'}`} isBold />
           </div>
 
           <hr className="p-hr" />
-          <DetailItem label="Paid Via:" value={session.paymentMethod?.toUpperCase()} />
-          {session.paymentMethod === 'mpesa' && session.mpesaReference && (
-            <DetailItem label="MPesa Ref:" value={session.mpesaReference} />
+          <DetailItem label="Paid Via:" value={session.payment_method?.toUpperCase()} />
+          {session.payment_method === 'mpesa' && session.mpesa_reference && (
+            <DetailItem label="MPesa Ref:" value={session.mpesa_reference} />
           )}
-          <DetailItem label="Points Earned:" value={`${session.pointsAwarded || 0} pts`} />
+          <DetailItem label="Points Earned:" value={`${session.points_earned || 0} pts`} />
           
           <div className="footer p-footer">
             <p className="p-p">Thank you for gaming with us!</p>

@@ -2,133 +2,201 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { GameSession, Customer, GameConsole } from '@/types';
+import type { Session, Customer, Station } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Gamepad2 } from 'lucide-react';
-import StartSessionDialog from './components/start-session-dialog';
+import StartSessionDialog, { type SessionFormData } from './components/start-session-dialog';
 import EndSessionDialog from './components/end-session-dialog';
 import ReceiptDialog from './components/receipt-dialog';
 import ActiveSessionCard from './components/active-session-card';
-import { MOCK_GAME_CONSOLES, VAT_RATE, POINTS_PER_CURRENCY_UNIT } from '@/lib/constants';
+import { MOCK_STATIONS, POINTS_PER_CURRENCY_UNIT } from '@/lib/constants';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInMinutes } from 'date-fns';
+import { createClient } from '@/lib/supabase/client';
 
 export default function SessionsPage() {
-  const [activeSessions, setActiveSessions] = useState<GameSession[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]); // Mock customers
-  const [consoles, setConsoles] = useState<GameConsole[]>(MOCK_GAME_CONSOLES);
+  const [activeSessions, setActiveSessions] = useState<Session[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [stations, setStations] = useState<Station[]>(MOCK_STATIONS);
   
   const [isStartSessionDialogOpen, setIsStartSessionDialogOpen] = useState(false);
-  const [sessionToEnd, setSessionToEnd] = useState<GameSession | null>(null);
-  const [sessionForReceipt, setSessionForReceipt] = useState<GameSession | null>(null);
+  const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
+  const [sessionForReceipt, setSessionForReceipt] = useState<Session | null>(null);
 
   const { toast } = useToast();
+  const supabase = createClient();
 
+  // Fetch initial data for customers and active sessions
   useEffect(() => {
-    // Mock initial customers for selection
-    setCustomers([
-      { id: 'cust1', name: 'John Doe', phone: '0712345678', email: 'john.doe@example.com', loyaltyPoints: 120, createdAt: new Date(), sessionHistory: [] },
-      { id: 'cust2', name: 'Jane Smith', phone: '0723456789', email: 'jane.smith@example.com', loyaltyPoints: 75, createdAt: new Date(), sessionHistory: [] },
-      { id: 'cust3', name: 'Alex Green', phone: '0734567890', email: 'alex.green@example.com', loyaltyPoints: 200, createdAt: new Date(), sessionHistory: [] },
-    ]);
-    // Mock one active session for demo
-     const mockSession: GameSession = {
-      id: `sess${Date.now()}`,
-      customerId: 'cust1',
-      customerName: 'John Doe',
-      consoleId: 'ps5-1',
-      consoleName: 'PlayStation 5 - Console 1',
-      gameName: 'Spider-Man 2',
-      startTime: new Date(Date.now() - 30 * 60 * 1000), // 30 mins ago
-      billingType: 'per-hour',
-      rate: 200,
-      paymentStatus: 'pending',
-      createdAt: new Date(),
+    const fetchInitialData = async () => {
+      // Fetch customers
+      const { data: customerData, error: customerError } = await supabase.from('customers').select('*');
+      if (customerError) {
+        toast({ title: "Error fetching customers", description: customerError.message, variant: "destructive" });
+      } else {
+        setCustomers(customerData || []);
+      }
+
+      // Fetch active sessions
+      const { data: sessionData, error: sessionError } = await supabase.from('sessions').select('*').eq('payment_status', 'pending');
+      if (sessionError) {
+         toast({ title: "Error fetching active sessions", description: sessionError.message, variant: "destructive" });
+      } else {
+        const fetchedSessions: Session[] = (sessionData || []).map(s => ({
+            ...s,
+            id: s.id,
+            customer_id: s.customer_id,
+            station_id: s.station_id,
+            game_name: s.game_name || 'Unknown Game',
+            start_time: s.start_time,
+            session_type: s.session_type,
+            rate: s.amount_charged || 0, // Assuming rate might be stored in amount_charged for fixed sessions initially
+            payment_status: s.payment_status,
+            created_at: s.created_at,
+            customerName: customers.find(c => c.id === s.customer_id)?.full_name || 'Unknown Customer',
+            stationName: stations.find(st => st.id === s.station_id)?.name || 'Unknown Station'
+        }));
+        setActiveSessions(fetchedSessions);
+        // Sync station statuses
+        setStations(prevStations => prevStations.map(st => {
+            const activeSession = fetchedSessions.find(s => s.station_id === st.id);
+            return activeSession ? { ...st, status: 'in-use', currentSessionId: activeSession.id } : { ...st, status: 'available', currentSessionId: undefined };
+        }));
+      }
     };
-    setActiveSessions([mockSession]);
-    setConsoles(prevConsoles => prevConsoles.map(c => c.id === 'ps5-1' ? { ...c, status: 'in-use', currentGameSessionId: mockSession.id } : c));
+    
+    fetchInitialData();
+  }, [supabase, toast]);
 
-  }, []);
 
-  const handleStartSession = (data: Omit<GameSession, 'id' | 'startTime' | 'paymentStatus' | 'createdAt' | 'customerName' | 'consoleName' | 'endTime' | 'durationMinutes' | 'subtotalAmount' | 'vatAmount' | 'totalAmount' | 'paymentMethod' | 'mpesaReference' | 'pointsAwarded'> & { customerId: string; consoleId: string; }) => {
-    const customer = customers.find(c => c.id === data.customerId);
-    const gameConsole = consoles.find(c => c.id === data.consoleId);
+  const handleStartSession = async (formData: SessionFormData) => {
+    const customer = customers.find(c => c.id === formData.customerId);
+    const station = stations.find(s => s.id === formData.stationId);
 
-    if (!customer || !gameConsole) {
-      toast({ title: "Error", description: "Selected customer or console not found.", variant: "destructive" });
+    if (!customer || !station) {
+      toast({ title: "Error", description: "Selected customer or station not found.", variant: "destructive" });
       return;
     }
-    if (gameConsole.status !== 'available') {
-        toast({ title: "Console Unavailable", description: `${gameConsole.name} is currently ${gameConsole.status}.`, variant: "destructive" });
+    if (station.status !== 'available') {
+        toast({ title: "Station Unavailable", description: `${station.name} is currently ${station.status}.`, variant: "destructive" });
+        return;
+    }
+    
+    const newSessionPayload = {
+      customer_id: formData.customerId,
+      station_id: formData.stationId,
+      game_name: formData.gameName,
+      session_type: formData.sessionType,
+      start_time: new Date().toISOString(),
+      // 'rate' is not a DB column, so we don't send it. amount_charged is set at the end.
+    };
+
+    const { data: insertedSession, error } = await supabase.from('sessions').insert(newSessionPayload).select().single();
+
+    if (error) {
+        toast({ title: "Failed to Start Session", description: error.message, variant: "destructive" });
         return;
     }
 
-
-    const newSession: GameSession = {
-      ...data,
-      id: `sess${Date.now()}`,
-      customerName: customer.name,
-      consoleName: gameConsole.name,
-      startTime: new Date(),
-      paymentStatus: 'pending',
-      createdAt: new Date(),
+    const newSession: Session = {
+      ...insertedSession,
+      id: insertedSession.id,
+      customerName: customer.full_name,
+      stationName: station.name,
+      rate: formData.rate, // Keep rate on client-side for calculation
+      game_name: insertedSession.game_name,
+      session_type: insertedSession.session_type,
+      start_time: insertedSession.start_time,
+      payment_status: 'pending',
+      created_at: insertedSession.created_at,
+      customer_id: insertedSession.customer_id
     };
+
     setActiveSessions(prev => [...prev, newSession]);
-    setConsoles(prev => prev.map(c => c.id === data.consoleId ? { ...c, status: 'in-use', currentGameSessionId: newSession.id } : c));
+    setStations(prev => prev.map(s => s.id === formData.stationId ? { ...s, status: 'in-use', currentSessionId: newSession.id } : s));
     setIsStartSessionDialogOpen(false);
-    toast({ title: "Session Started", description: `Session for ${customer.name} on ${gameConsole.name} has started.` });
+    toast({ title: "Session Started", description: `Session for ${customer.full_name} on ${station.name} has started.` });
   };
 
-  const handleOpenEndSessionDialog = (session: GameSession) => {
+  const handleOpenEndSessionDialog = (session: Session) => {
     const endTime = new Date();
-    let durationMinutes = 0;
-    if (session.billingType === 'per-hour') {
-      durationMinutes = differenceInMinutes(endTime, session.startTime);
-    }
+    const durationMinutes = differenceInMinutes(endTime, new Date(session.start_time));
     
-    let subtotal = 0;
-    if (session.billingType === 'per-hour') {
-      subtotal = Math.max(1, Math.ceil(durationMinutes / 60)) * session.rate;
+    let amount_charged = 0;
+    if (session.session_type === 'per-hour') {
+      // Bill per hour, minimum of 1 hour.
+      const hours = Math.max(1, Math.ceil(durationMinutes / 60));
+      amount_charged = hours * session.rate;
     } else { // 'per-game'
-      subtotal = session.rate;
+      amount_charged = session.rate; // Fixed rate
     }
 
-    const vatAmount = subtotal * VAT_RATE;
-    const totalAmount = subtotal + vatAmount;
-    const pointsAwarded = Math.floor(subtotal * POINTS_PER_CURRENCY_UNIT);
-
+    const points_earned = Math.floor(amount_charged * POINTS_PER_CURRENCY_UNIT);
 
     setSessionToEnd({ 
       ...session, 
-      endTime, 
-      durationMinutes,
-      subtotalAmount: subtotal, 
-      vatAmount, 
-      totalAmount, 
-      pointsAwarded 
+      end_time: endTime.toISOString(), 
+      duration_minutes: durationMinutes,
+      amount_charged: amount_charged,
+      points_earned: points_earned
     });
   };
 
-  const handleProcessPayment = useCallback((paidSession: GameSession) => {
+  const handleProcessPayment = useCallback(async (paidSession: Session) => {
+    if (!paidSession.end_time || paidSession.amount_charged == null) {
+      toast({title: "Error", description: "Cannot process payment without end time and amount.", variant: "destructive"});
+      return;
+    }
+
+    const { error } = await supabase
+      .from('sessions')
+      .update({
+        end_time: paidSession.end_time,
+        duration_minutes: paidSession.duration_minutes,
+        amount_charged: paidSession.amount_charged,
+        points_earned: paidSession.points_earned,
+        payment_status: 'paid',
+        payment_method: paidSession.payment_method,
+        mpesa_reference: paidSession.mpesa_reference,
+      })
+      .eq('id', paidSession.id);
+
+    if (error) {
+        toast({ title: "Payment Failed", description: `Could not update session: ${error.message}`, variant: "destructive" });
+        return;
+    }
+
+    // Also update customer's loyalty points
+    const { error: loyaltyError } = await supabase.rpc('increment_loyalty_points', {
+      customer_id_param: paidSession.customer_id,
+      points_to_add: paidSession.points_earned || 0
+    });
+
+     if (loyaltyError) {
+        // Log the error but don't block the user flow, as the main payment succeeded.
+        toast({ title: "Loyalty Points Warning", description: `Could not update points: ${loyaltyError.message}`, variant: "destructive" });
+    }
+
+
     setActiveSessions(prev => prev.filter(s => s.id !== paidSession.id));
-    setConsoles(prev => prev.map(c => c.id === paidSession.consoleId ? { ...c, status: 'available', currentGameSessionId: undefined } : c));
+    setStations(prev => prev.map(s => s.id === paidSession.station_id ? { ...s, status: 'available', currentSessionId: undefined } : s));
     setCustomers(prev => prev.map(cust => 
-      cust.id === paidSession.customerId 
-      ? { ...cust, loyaltyPoints: (cust.loyaltyPoints || 0) + (paidSession.pointsAwarded || 0) } 
+      cust.id === paidSession.customer_id 
+      ? { ...cust, loyalty_points: (cust.loyalty_points || 0) + (paidSession.points_earned || 0) } 
       : cust
     ));
     
     setSessionToEnd(null);
     setSessionForReceipt(paidSession); // Show receipt after payment
     toast({ title: "Payment Successful", description: `Payment for ${paidSession.customerName}'s session processed.` });
-  }, [toast]);
+  }, [supabase, toast]);
 
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-headline font-semibold">Active Game Sessions</h2>
-        <Button onClick={() => setIsStartSessionDialogOpen(true)} disabled={consoles.filter(c => c.status === 'available').length === 0}>
+        <Button onClick={() => setIsStartSessionDialogOpen(true)} disabled={stations.filter(c => c.status === 'available').length === 0}>
           <PlusCircle className="mr-2 h-4 w-4" /> Start New Session
         </Button>
       </div>
@@ -152,7 +220,7 @@ export default function SessionsPage() {
         onClose={() => setIsStartSessionDialogOpen(false)}
         onSubmit={handleStartSession}
         customers={customers}
-        consoles={consoles.filter(c => c.status === 'available')}
+        stations={stations.filter(s => s.status === 'available')}
       />
 
       {sessionToEnd && (

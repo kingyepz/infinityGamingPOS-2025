@@ -1,12 +1,12 @@
 
 "use client";
 
-import React from 'react'; // Import React
+import React from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import type { Customer, GameConsole } from '@/types'; // Removed GameSession as it's not directly used for form data
-
+import type { Customer, Station } from '@/types';
+import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,61 +36,58 @@ import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 const sessionFormSchema = z.object({
   customerId: z.string().min(1, "Customer is required."),
-  consoleId: z.string().min(1, "Console is required."),
+  stationId: z.string().min(1, "Station is required."),
   gameName: z.string().min(2, "Game name must be at least 2 characters.").max(100, "Game name too long."),
-  billingType: z.enum(['per-hour', 'per-game'], { required_error: "Billing type is required." }),
-  rate: z.coerce.number().min(0, "Rate must be a non-negative number.").max(10000, "Rate seems too high."), // Added max validation
+  sessionType: z.enum(['per-hour', 'per-game'], { required_error: "Billing type is required." }),
+  rate: z.coerce.number().min(0, "Rate must be a non-negative number.").max(10000, "Rate seems too high."),
 });
 
-export type SessionFormData = z.infer<typeof sessionFormSchema>; // Exporting for use in page.tsx
+export type SessionFormData = z.infer<typeof sessionFormSchema>;
 
 interface StartSessionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: SessionFormData) => void;
   customers: Customer[];
-  consoles: GameConsole[];
+  stations: Station[];
 }
 
-export default function StartSessionDialog({ isOpen, onClose, onSubmit, customers, consoles }: StartSessionDialogProps) {
+export default function StartSessionDialog({ isOpen, onClose, onSubmit, customers, stations }: StartSessionDialogProps) {
   const form = useForm<SessionFormData>({
     resolver: zodResolver(sessionFormSchema),
     defaultValues: {
       customerId: "",
-      consoleId: "",
+      stationId: "",
       gameName: "",
-      billingType: "per-hour",
-      rate: 0, // Default rate, could be dynamic based on console/game later
+      sessionType: "per-hour",
+      rate: 200,
     },
   });
 
-  // Reset form when dialog is opened/closed or props change
   React.useEffect(() => {
     if (isOpen) {
       form.reset({
         customerId: "",
-        consoleId: "",
+        stationId: "",
         gameName: "",
-        billingType: "per-hour",
-        rate: 0, 
+        sessionType: "per-hour",
+        rate: 200, 
       });
     }
   }, [isOpen, form]);
 
-
   const handleSubmit = (data: SessionFormData) => {
     onSubmit(data);
-    // form.reset(); // Form reset is handled by useEffect or parent component on close
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-        if (!open) onClose(); // Call onClose when dialog is dismissed
+        if (!open) onClose();
     }}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Start New Game Session</DialogTitle>
-          <DialogDescription>Select customer, console, game, and billing details.</DialogDescription>
+          <DialogDescription>Select customer, station, game, and billing details.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
@@ -108,7 +105,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                     </FormControl>
                     <SelectContent>
                       {customers.length > 0 ? customers.map(customer => (
-                        <SelectItem key={customer.id} value={customer.id}>{customer.name} ({customer.phone})</SelectItem>
+                        <SelectItem key={customer.id} value={customer.id}>{customer.full_name} ({customer.phone_number})</SelectItem>
                       )) : <SelectItem value="no-customers" disabled>No customers available</SelectItem>}
                     </SelectContent>
                   </Select>
@@ -118,32 +115,22 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
             />
             <FormField
               control={form.control}
-              name="consoleId"
+              name="stationId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Game Console</FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                        field.onChange(value);
-                        // Optionally, set a default rate based on console type here
-                        // const selectedConsole = consoles.find(c => c.id === value);
-                        // if (selectedConsole && selectedConsole.defaultRate) {
-                        //   form.setValue('rate', selectedConsole.defaultRate);
-                        // }
-                    }} 
-                    defaultValue={field.value}
-                  >
+                  <FormLabel>Game Station</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a console" />
+                        <SelectValue placeholder="Select a station" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {consoles.length > 0 ? consoles.map(console => (
-                        <SelectItem key={console.id} value={console.id} disabled={console.status !== 'available'}>
-                          {console.name} <span className={cn("text-xs ml-2", console.status === 'available' ? 'text-green-500' : 'text-red-500')}>({console.status})</span>
+                      {stations.length > 0 ? stations.map(station => (
+                        <SelectItem key={station.id} value={station.id} disabled={station.status !== 'available'}>
+                          {station.name} <span className={cn("text-xs ml-2", station.status === 'available' ? 'text-green-500' : 'text-red-500')}>({station.status})</span>
                         </SelectItem>
-                      )) : <SelectItem value="no-consoles" disabled>No consoles available</SelectItem>}
+                      )) : <SelectItem value="no-stations" disabled>No stations available</SelectItem>}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -166,7 +153,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="billingType"
+                name="sessionType"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Billing Type</FormLabel>

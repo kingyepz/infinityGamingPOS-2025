@@ -1,11 +1,11 @@
 
 "use client";
 
-import React from 'react'; // Removed useState as it's not directly used
+import React from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import type { GameSession } from '@/types';
+import type { Session } from '@/types';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -47,8 +47,8 @@ type PaymentFormData = z.infer<typeof paymentFormSchema>;
 interface EndSessionDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  session: GameSession; // Assuming session always has calculation fields populated before opening dialog
-  onProcessPayment: (paidSession: GameSession) => void;
+  session: Session;
+  onProcessPayment: (paidSession: Session) => void;
 }
 
 export default function EndSessionDialog({ isOpen, onClose, session, onProcessPayment }: EndSessionDialogProps) {
@@ -62,7 +62,6 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
   
   const paymentMethod = form.watch("paymentMethod");
 
-  // Reset form when dialog opens or session changes
   React.useEffect(() => {
     if (isOpen) {
       form.reset({
@@ -74,45 +73,42 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
 
 
   const handleSubmit = (data: PaymentFormData) => {
-    const paidSession: GameSession = {
+    const paidSession: Session = {
       ...session,
-      paymentStatus: 'paid',
-      paymentMethod: data.paymentMethod,
-      mpesaReference: data.paymentMethod === 'mpesa' ? data.mpesaReference?.trim() : undefined,
+      payment_status: 'paid',
+      payment_method: data.paymentMethod,
+      mpesa_reference: data.paymentMethod === 'mpesa' ? data.mpesaReference?.trim() : undefined,
     };
     onProcessPayment(paidSession);
-    // form.reset(); // Handled by useEffect or parent component
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) onClose(); // Call onClose when dialog is dismissed
+      if (!open) onClose();
     }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>End Session & Process Payment</DialogTitle>
           <DialogDescription>
-            Finalize session for {session.customerName} on {session.consoleName} ({session.gameName}).
+            Finalize session for {session.customerName} on {session.stationName} ({session.game_name}).
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-3 py-4 text-sm">
-          <div className="flex justify-between"><span>Start Time:</span> <span>{format(new Date(session.startTime), 'p')}</span></div>
-          {session.endTime && <div className="flex justify-between"><span>End Time:</span> <span>{format(new Date(session.endTime), 'p')}</span></div>}
-          {session.billingType === 'per-hour' && session.durationMinutes != null && (
-            <div className="flex justify-between"><span>Duration:</span> <span>{session.durationMinutes} minutes</span></div>
+          <div className="flex justify-between"><span>Start Time:</span> <span>{format(new Date(session.start_time), 'p')}</span></div>
+          {session.end_time && <div className="flex justify-between"><span>End Time:</span> <span>{format(new Date(session.end_time), 'p')}</span></div>}
+          {session.session_type === 'per-hour' && session.duration_minutes != null && (
+            <div className="flex justify-between"><span>Duration:</span> <span>{session.duration_minutes} minutes</span></div>
           )}
-          <div className="flex justify-between"><span>Billing:</span> <span>{session.billingType === 'per-hour' ? `${CURRENCY_SYMBOL} ${session.rate}/hr` : `${CURRENCY_SYMBOL} ${session.rate} (fixed)`}</span></div>
+          <div className="flex justify-between"><span>Billing:</span> <span>{session.session_type === 'per-hour' ? `${CURRENCY_SYMBOL} ${session.rate}/hr` : `${CURRENCY_SYMBOL} ${session.rate} (fixed)`}</span></div>
           
           <Separator />
           
-          <div className="flex justify-between"><span>Subtotal:</span> <span>{CURRENCY_SYMBOL} {session.subtotalAmount?.toFixed(2) || '0.00'}</span></div>
-          <div className="flex justify-between"><span>VAT (16%):</span> <span>{CURRENCY_SYMBOL} {session.vatAmount?.toFixed(2) || '0.00'}</span></div>
-          <div className="flex justify-between font-semibold text-lg"><span>Total Amount:</span> <span>{CURRENCY_SYMBOL} {session.totalAmount?.toFixed(2) || '0.00'}</span></div>
+          <div className="flex justify-between font-semibold text-lg"><span>Amount Charged:</span> <span>{CURRENCY_SYMBOL} {session.amount_charged?.toFixed(2) || '0.00'}</span></div>
           
           <Separator />
           
-          <div className="flex justify-between"><span>Points Earned:</span> <span className="font-medium text-green-500">{session.pointsAwarded || 0} pts</span></div>
+          <div className="flex justify-between"><span>Points Earned:</span> <span className="font-medium text-green-500">{session.points_earned || 0} pts</span></div>
         </div>
 
         <Form {...form}>

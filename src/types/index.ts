@@ -1,5 +1,4 @@
 
-
 export interface Customer {
   id: string; // UUID from Supabase
   created_at: string; // Supabase returns TIMESTAMPTZ as a string
@@ -12,33 +11,34 @@ export interface Customer {
   join_date: string;
 }
 
-export interface GameConsole {
+export interface Station {
   id: string;
   name: string;
   status: 'available' | 'in-use' | 'maintenance';
-  currentGameSessionId?: string;
+  currentSessionId?: string;
 }
 
-export interface GameSession {
-  id: string; // UUID
-  created_at: string; // TIMESTAMPTZ
+export interface Session {
+  // Fields that map directly to the 'sessions' table in Supabase
+  id: string;
   customer_id: string;
-  customerName?: string; // This can be joined in queries, not a direct column
-  console_id: string;
-  console_name: string;
-  game_name: string;
-  start_time: string; // TIMESTAMPTZ
-  end_time?: string | null; // TIMESTAMPTZ
-  billing_type: 'per-hour' | 'per-game';
-  rate: number; // NUMERIC
-  duration_minutes?: number | null; // INTEGER
-  subtotal_amount?: number | null; // NUMERIC
-  vat_amount?: number | null; // NUMERIC
-  total_amount?: number | null; // NUMERIC
-  payment_status: 'pending' | 'paid' | 'cancelled'; // TEXT
-  payment_method?: 'cash' | 'mpesa' | null; // TEXT
-  mpesa_reference?: string | null; // TEXT
-  points_awarded?: number | null; // INTEGER
+  station_id: string;
+  game_name: string; // User's table has game_id, but we'll use game_name for simplicity until games table is defined
+  start_time: string;
+  end_time?: string | null;
+  duration_minutes?: number | null;
+  session_type: 'per-hour' | 'per-game';
+  amount_charged?: number | null;
+  payment_status: 'pending' | 'paid' | 'cancelled';
+  points_earned?: number | null;
+  created_at: string;
+  
+  // Client-side fields for UI display, state management, and calculations
+  customerName?: string;
+  stationName?: string;
+  rate: number; // For calculation, not stored in DB
+  payment_method?: 'cash' | 'mpesa' | null;
+  mpesa_reference?: string | null;
 }
 
 
