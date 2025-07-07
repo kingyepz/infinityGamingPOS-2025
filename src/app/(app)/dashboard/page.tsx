@@ -1,8 +1,7 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { SalesOverviewChart } from './components/SalesOverviewChart';
+import { SalesOverviewChart } from './components/RevenueChart';
 import { WelcomeCard } from './components/WelcomeCard';
 import { SalesBySource } from './components/SalesBySource';
 import { CategoryList } from './components/CategoryList';
