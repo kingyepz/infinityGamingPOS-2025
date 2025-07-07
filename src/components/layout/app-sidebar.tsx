@@ -17,7 +17,7 @@ import {
   Users, 
   Gamepad2 as GamepadIcon,
   BrainCircuit,
-  Play,
+  Timer,
   Album,
   CreditCard,
   Warehouse,
@@ -25,6 +25,7 @@ import {
   Settings,
   CircleUser,
   LogOut,
+  Split,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React, { useState, useEffect } from 'react';
@@ -36,7 +37,7 @@ import { Badge } from '@/components/ui/badge';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'cashier', 'supervisor'] },
   { href: '/customers', label: 'Customers', icon: Users, roles: ['admin', 'cashier', 'supervisor'] },
-  { href: '/sessions', label: 'Game Sessions', icon: Play, roles: ['admin', 'cashier', 'supervisor'] },
+  { href: '/sessions', label: 'Game Sessions', icon: Timer, roles: ['admin', 'cashier', 'supervisor'] },
   { href: '/stations', label: 'Stations', icon: GamepadIcon, roles: ['admin', 'supervisor'] },
   { href: '/games', label: 'Games', icon: Album, roles: ['admin', 'supervisor'] },
   { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['admin', 'cashier', 'supervisor'] },
