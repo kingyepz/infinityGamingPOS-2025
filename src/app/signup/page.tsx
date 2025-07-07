@@ -30,23 +30,17 @@ export default function SignUpPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const supabase = createClient();
 
-  const form = useForm<SignUpFormValues>({
-    resolver: zodResolver(signUpFormSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
   const onSubmit = async (formData: SignUpFormValues) => {
     setIsLoading(true);
     setFormError(null);
     
+    // This flow creates a user in Supabase Auth but does NOT assign a role.
+    // Role assignment must be done by an Admin through a secure interface/function.
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
       options: {
-        // emailRedirectTo: `${window.location.origin}/welcome`, // Optional
+        // emailRedirectTo: `${window.location.origin}/welcome`, // Optional welcome page
       }
     });
 
@@ -61,15 +55,13 @@ export default function SignUpPage() {
       });
       return;
     }
-
-    // As per new spec, Admins create staff accounts via Edge Functions.
-    // Public sign-up creates an auth user, but role assignment is separate.
-    // No automatic role insertion into 'public.users' from client-side here.
     
+    // The user has been created in auth.users, but they have no entry in public.users yet.
+    // They must verify their email and then be assigned a role by an admin.
     setIsSubmitted(true);
     toast({
       title: "Sign Up Initiated!",
-      description: "Please check your email to confirm your account. An administrator will need to assign you a role before you can fully access the system.",
+      description: "Please check your email to confirm your account. An administrator must assign you a role before you can fully access the system.",
     });
   };
 

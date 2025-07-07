@@ -69,7 +69,6 @@ export default function LoginPage() {
 
     if (authData.user) {
       try {
-        // Query 'public.users' table for the role, linking on 'id'
         const { data: userData, error: userDbError } = await supabase
           .from('users') 
           .select('role')
@@ -78,21 +77,18 @@ export default function LoginPage() {
 
         if (userDbError || !userData) {
           setIsLoading(false);
+          const specificError = "Your account is awaiting role assignment. Please contact an administrator.";
+          
           if (userDbError) {
-            console.error("Error fetching user role from database:", userDbError);
+            console.error(`Error fetching user role from database for user ${authData.user.id}:`, userDbError.message);
           } else {
-            // This branch is hit if no record is found, and userDbError is null
-            console.warn(`User role query for ID '${authData.user.id}' in 'public.users' returned no data. 
-            TROUBLESHOOTING:
-            1. Verify a row exists in 'public.users' where the 'id' column matches '${authData.user.id}'.
-            2. Ensure 'public.users' has a 'role' column with a valid role (e.g., 'admin', 'cashier', 'supervisor').
-            3. Check Row Level Security (RLS) policies on 'public.users' to ensure the authenticated user has SELECT permission for their own record. See RLS policy examples in documentation or previous messages.
-            Current user (auth.uid()): ${authData.user.id}`);
+            console.warn(`User role query for ID '${authData.user.id}' in 'public.users' returned no data. Account is pending role assignment.`);
           }
-          setFormError("User role not configured. Please contact an administrator.");
+
+          setFormError(specificError);
           toast({
-            title: "Login Issue",
-            description: "Your account is valid, but role information is missing. Please contact an administrator.",
+            title: "Role Assignment Pending",
+            description: specificError,
             variant: "destructive"
           });
           return; 
@@ -104,17 +100,10 @@ export default function LoginPage() {
             redirectPath = '/dashboard/admin';
             break;
           case 'cashier': 
-            redirectPath = '/dashboard/cashier';
-            break;
-          case 'supervisor': 
-             redirectPath = '/dashboard/cashier'; // Supervisors use cashier dashboard as per spec
+          case 'supervisor':
+             redirectPath = '/dashboard/cashier';
              break;
-          // case 'floor_staff': // Example, if 'floor_staff' has a general dashboard
-          //   redirectPath = '/dashboard';
-          //   break;
           default:
-            // If role is something else or not explicitly handled, go to general dashboard
-            // Or, you might want to show an error if the role is unexpected.
             console.warn(`User role '${userData.role}' does not have a specific dashboard redirection rule. Defaulting to /dashboard.`);
             redirectPath = '/dashboard'; 
             break;
@@ -140,8 +129,6 @@ export default function LoginPage() {
         });
       }
     } else {
-      // This case should ideally not be reached if signInError is null and authData.user is also null.
-      // Added for completeness.
       setIsLoading(false);
       setFormError("Login failed. User data not found after successful authentication.");
       toast({
