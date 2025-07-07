@@ -2,14 +2,14 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Globe, Tv, Gamepad2, Vr360 } from 'lucide-react';
+import { Globe, Tv, Gamepad2, View } from 'lucide-react';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 
 const salesData = [
   { name: 'Online Bookings', icon: Globe, sales: 2500, value: '196,241.68', bounce: '29.9%' },
   { name: 'PlayStation', icon: Gamepad2, sales: 3900, value: '373,955.56', bounce: '40.22%' },
   { name: 'Xbox', icon: Tv, sales: 1400, value: '162,075.74', bounce: '23.44%' },
-  { name: 'VR Sessions', icon: Vr360, sales: 562, value: '122,351.46', bounce: '32.14%' },
+  { name: 'VR Sessions', icon: View, sales: 562, value: '122,351.46', bounce: '32.14%' },
 ];
 
 export function SalesBySource() {
