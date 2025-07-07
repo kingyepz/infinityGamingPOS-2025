@@ -26,12 +26,13 @@ const fetchDashboardStats = async () => {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
+  // Updated to use the 'sessions' table and correct column names
   const promises = [
-    supabase.from('game_sessions').select('*', { count: 'exact', head: true }).eq('payment_status', 'pending'),
-    supabase.from('game_sessions').select('total_amount, duration_minutes').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
+    supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('payment_status', 'pending'),
+    supabase.from('sessions').select('amount_charged, duration_minutes').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
     supabase.from('customers').select('*', { count: 'exact', head: true }).gte('join_date', todayStart.toISOString()).lte('join_date', todayEnd.toISOString()),
-    supabase.from('game_sessions').select('total_amount').eq('payment_status', 'cancelled').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
-    supabase.from('game_sessions').select('points_awarded').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
+    supabase.from('sessions').select('amount_charged').eq('payment_status', 'cancelled').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
+    supabase.from('sessions').select('points_earned').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
     supabase.from('customers').select('*', { count: 'exact', head: true }),
   ];
 
@@ -69,14 +70,14 @@ const fetchDashboardStats = async () => {
   const loyaltyData = loyaltyDataResult.data || [];
   const totalCustomersCount = totalCustomersResult.count ?? 0;
 
-  // Calculations
-  const todaysRevenue = paidSessions.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0;
+  // Calculations updated for the 'sessions' table schema
+  const todaysRevenue = paidSessions.reduce((sum, s) => sum + (s.amount_charged || 0), 0) || 0;
   const transactionCount = paidSessions.length || 0;
   const avgTransactionValue = transactionCount > 0 ? todaysRevenue / transactionCount : 0;
-  const refundsTodayValue = cancelledSessions.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0;
+  const refundsTodayValue = cancelledSessions.reduce((sum, s) => sum + (s.amount_charged || 0), 0) || 0;
   const totalDuration = paidSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) || 0;
   const avgSessionDurationMins = transactionCount > 0 ? totalDuration / transactionCount : 0;
-  const loyaltyPointsToday = loyaltyData.reduce((sum, s) => sum + (s.points_awarded || 0), 0) || 0;
+  const loyaltyPointsToday = loyaltyData.reduce((sum, s) => sum + (s.points_earned || 0), 0) || 0;
 
   return {
     activeSessionsCount,
