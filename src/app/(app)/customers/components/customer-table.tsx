@@ -71,7 +71,7 @@ export default function CustomerTable({ customers, onEdit, onDelete }: CustomerT
                 </Badge>
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                {customer.created_at ? format(new Date(customer.created_at), 'PPP') : 'N/A'}
+                {customer.join_date ? format(new Date(customer.join_date), 'PPP') : 'N/A'}
               </TableCell>
               <TableCell className="text-right space-x-2 whitespace-nowrap">
                 <Button variant="outline" size="icon" onClick={() => onEdit(customer)} aria-label={`Edit ${customer.full_name}`}>

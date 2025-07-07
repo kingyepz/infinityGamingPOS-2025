@@ -3,11 +3,13 @@
 export interface Customer {
   id: string; // UUID from Supabase
   created_at: string; // Supabase returns TIMESTAMPTZ as a string
+  updated_at: string;
   full_name: string;
   phone_number: string;
   email: string;
   loyalty_points: number;
   loyalty_tier: string;
+  join_date: string;
 }
 
 export interface GameConsole {

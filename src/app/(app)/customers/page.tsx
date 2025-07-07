@@ -23,8 +23,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 
-type AddCustomerPayload = Omit<Customer, 'id' | 'created_at' | 'loyalty_points' | 'loyalty_tier'>;
-type UpdateCustomerPayload = Omit<Customer, 'created_at' | 'loyalty_points' | 'loyalty_tier'>;
+// Explicitly define payloads for clarity and robustness
+type AddCustomerPayload = Pick<Customer, 'full_name' | 'phone_number' | 'email'>;
+type UpdateCustomerPayload = Pick<Customer, 'id' | 'full_name' | 'phone_number' | 'email'>;
 
 // Define functions to interact with Supabase
 const fetchCustomers = async () => {
@@ -44,6 +45,9 @@ const addCustomer = async (customer: AddCustomerPayload) => {
 const updateCustomer = async (customer: UpdateCustomerPayload) => {
   const supabase = createClient();
   const { id, ...updateData } = customer;
+  // Supabase automatically updates `updated_at` if a trigger is configured.
+  // If not, you might need to add `updated_at: new Date().toISOString()` to updateData.
+  // For now, we only update the form fields.
   const { data, error } = await supabase.from('customers').update(updateData).eq('id', id).select().single();
   if (error) throw new Error(error.message);
   return data;
