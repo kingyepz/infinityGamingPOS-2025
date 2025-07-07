@@ -89,6 +89,7 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
   };
 
   const amountPerPlayer = session.amount_charged ? (session.amount_charged / 2).toFixed(2) : '0.00';
+  const pointsPerPlayer = session.points_earned ? Math.floor(session.points_earned / 2) : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -135,7 +136,7 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
                         <Label htmlFor="pay-split" className="flex items-center justify-between rounded-md border p-3 hover:bg-accent has-[[data-state=checked]]:border-primary">
                             <span className="flex items-center">
                                 <Split className="h-4 w-4 mr-2 text-muted-foreground" />
-                                Split bill 50/50 ({CURRENCY_SYMBOL}{amountPerPlayer} each)
+                                Split bill 50/50 ({CURRENCY_SYMBOL}{amountPerPlayer} & {pointsPerPlayer} pts each)
                             </span>
                             <RadioGroupItem value="split" id="pay-split" />
                         </Label>
