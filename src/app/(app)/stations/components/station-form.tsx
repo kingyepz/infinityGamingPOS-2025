@@ -37,6 +37,7 @@ const consoleTypes = [
     "PlayStation 5",
     "PlayStation 4",
     "Xbox Series X",
+    "Xbox Series S",
     "Xbox One",
     "Nintendo Switch",
     "Gaming PC",
