@@ -22,7 +22,7 @@ const getBadgeVariant = (points: number): 'default' | 'secondary' | 'destructive
 
 export default function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProps) {
   if (!customers || customers.length === 0) {
-    return <p className="text-center text-muted-foreground py-8">No customers registered yet.</p>;
+    return <p className="text-center text-muted-foreground py-8">No customers registered yet. Click 'Add Customer' to begin.</p>;
   }
 
   return (
@@ -45,12 +45,12 @@ export default function CustomerTable({ customers, onEdit, onDelete }: CustomerT
               <TableCell className="whitespace-nowrap">{customer.phone}</TableCell>
               <TableCell className="whitespace-nowrap">{customer.email}</TableCell>
               <TableCell className="text-right whitespace-nowrap">
-                <Badge variant={getBadgeVariant(customer.loyaltyPoints)}>
-                  {customer.loyaltyPoints}
+                <Badge variant={getBadgeVariant(customer.loyalty_points)}>
+                  {customer.loyalty_points}
                 </Badge>
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                {customer.createdAt ? format(new Date(customer.createdAt), 'PPP') : 'N/A'}
+                {customer.created_at ? format(new Date(customer.created_at), 'PPP') : 'N/A'}
               </TableCell>
               <TableCell className="text-right space-x-2 whitespace-nowrap">
                 <Button variant="outline" size="icon" onClick={() => onEdit(customer)} aria-label={`Edit ${customer.name}`}>

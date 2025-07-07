@@ -4,8 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-// No type import needed for Customer as it's not directly used here.
-
+import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -16,7 +15,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { DialogFooter } from "@/components/ui/dialog"; // Removed DialogClose as it's not used.
+import { DialogFooter } from "@/components/ui/dialog";
+import { Loader2 } from "lucide-react";
 
 const phoneRegex = new RegExp(
   /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
@@ -34,19 +34,20 @@ interface CustomerFormProps {
   onSubmit: (data: CustomerFormData) => void;
   defaultValues?: Partial<CustomerFormData>;
   onCancel: () => void;
+  isSubmitting: boolean;
 }
 
-export default function CustomerForm({ onSubmit, defaultValues, onCancel }: CustomerFormProps) {
+export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubmitting }: CustomerFormProps) {
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
-    defaultValues: defaultValues || {
+    defaultValues: {
       name: "",
       phone: "",
       email: "",
+      ...defaultValues
     },
   });
 
-  // Reset form if defaultValues change (e.g., when switching between add/edit)
   React.useEffect(() => {
     form.reset(defaultValues || { name: "", phone: "", email: "" });
   }, [defaultValues, form]);
@@ -54,7 +55,6 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel }: Cust
 
   const handleSubmit = (data: CustomerFormData) => {
     onSubmit(data);
-    // form.reset(); // onSubmit in parent now handles closing and state reset
   };
 
   return (
@@ -67,7 +67,7 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel }: Cust
             <FormItem>
               <FormLabel>Full Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. John Doe" {...field} />
+                <Input placeholder="e.g. John Doe" {...field} disabled={isSubmitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -80,7 +80,7 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel }: Cust
             <FormItem>
               <FormLabel>Phone Number</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. 0712345678" {...field} />
+                <Input placeholder="e.g. 0712345678" {...field} disabled={isSubmitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -93,15 +93,18 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel }: Cust
             <FormItem>
               <FormLabel>Email Address</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="e.g. john.doe@example.com" {...field} />
+                <Input type="email" placeholder="e.g. john.doe@example.com" {...field} disabled={isSubmitting} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button type="submit">Save Customer</Button>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>Cancel</Button>
+          <Button type="submit" disabled={isSubmitting}>
+             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Customer
+          </Button>
         </DialogFooter>
       </form>
     </Form>

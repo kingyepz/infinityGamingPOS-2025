@@ -1,12 +1,11 @@
 
 export interface Customer {
-  id: string;
+  id: string; // UUID from Supabase
   name: string;
   phone: string;
   email: string;
-  loyaltyPoints: number;
-  createdAt: Date;
-  sessionHistory?: Pick<GameSession, 'id' | 'gameName' | 'startTime' | 'totalAmount' | 'pointsAwarded'>[];
+  loyalty_points: number;
+  created_at: string; // Supabase returns TIMESTAMPTZ as a string
 }
 
 export interface GameConsole {

@@ -5,6 +5,8 @@ import { Inter as FontSans } from "next/font/google"
 import { cn } from "@/lib/utils"
 import ClientToaster from '@/components/client-toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import ReactQueryProvider from '@/components/react-query-provider';
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -15,6 +17,7 @@ export const metadata: Metadata = {
   title: 'Infinity Gaming Lounge',
   description: 'Point of Sale system for Infinity Gaming Lounge',
 };
+
 
 export default function RootLayout({
   children,
@@ -36,15 +39,17 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <ClientToaster />
-        </ThemeProvider>
+        <ReactQueryProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <ClientToaster />
+          </ThemeProvider>
+        </ReactQueryProvider>
       </body>
     </html>
   );
