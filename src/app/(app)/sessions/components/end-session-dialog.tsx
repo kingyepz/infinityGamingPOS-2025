@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,6 +29,9 @@ import { Separator } from '@/components/ui/separator';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+
+export type Payer = 'primary' | 'secondary' | 'split';
 
 const paymentFormSchema = z.object({
   paymentMethod: z.enum(['cash', 'mpesa'], { required_error: "Payment method is required." }),
@@ -49,11 +52,14 @@ interface EndSessionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   session: Session;
-  onProcessPayment: (paidSession: Session) => void;
+  onProcessPayment: (paidSession: Session, payer: Payer) => void;
   isProcessing: boolean;
 }
 
 export default function EndSessionDialog({ isOpen, onClose, session, onProcessPayment, isProcessing }: EndSessionDialogProps) {
+  const [payer, setPayer] = useState<Payer>('primary');
+  const hasTwoPlayers = !!session.secondary_customer_id;
+
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
@@ -66,10 +72,8 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
 
   React.useEffect(() => {
     if (isOpen) {
-      form.reset({
-        paymentMethod: "cash",
-        mpesaReference: "",
-      });
+      form.reset({ paymentMethod: "cash", mpesaReference: "" });
+      setPayer('primary');
     }
   }, [isOpen, form]);
 
@@ -81,8 +85,10 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
       payment_method: data.paymentMethod,
       mpesa_reference: data.paymentMethod === 'mpesa' ? data.mpesaReference?.trim() : undefined,
     };
-    onProcessPayment(paidSession);
+    onProcessPayment(paidSession, payer);
   };
+
+  const amountPerPlayer = session.amount_charged ? (session.amount_charged / 2).toFixed(2) : '0.00';
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -92,7 +98,7 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
         <DialogHeader>
           <DialogTitle>End Session & Process Payment</DialogTitle>
           <DialogDescription>
-            Finalize session for {session.customerName} on {session.stationName} ({session.game_name}).
+            Finalize session for {session.customerName}{hasTwoPlayers ? ` & ${session.secondaryCustomerName}` : ''} on {session.stationName}.
           </DialogDescription>
         </DialogHeader>
         
@@ -112,6 +118,29 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
           
           <div className="flex justify-between"><span>Points Earned:</span> <span className="font-medium text-green-500">{session.points_earned || 0} pts</span></div>
         </div>
+        
+        {hasTwoPlayers && (
+            <>
+                <div className="space-y-2">
+                    <Label>Payment Arrangement</Label>
+                    <RadioGroup value={payer} onValueChange={(value) => setPayer(value as Payer)} className="grid grid-cols-1 gap-2">
+                        <Label htmlFor="pay-primary" className="flex items-center justify-between rounded-md border p-3 hover:bg-accent has-[[data-state=checked]]:border-primary">
+                            <span>{session.customerName} pays full amount</span>
+                            <RadioGroupItem value="primary" id="pay-primary" />
+                        </Label>
+                        <Label htmlFor="pay-secondary" className="flex items-center justify-between rounded-md border p-3 hover:bg-accent has-[[data-state=checked]]:border-primary">
+                            <span>{session.secondaryCustomerName} pays full amount</span>
+                            <RadioGroupItem value="secondary" id="pay-secondary" />
+                        </Label>
+                        <Label htmlFor="pay-split" className="flex items-center justify-between rounded-md border p-3 hover:bg-accent has-[[data-state=checked]]:border-primary">
+                            <span>Split bill 50/50 ({CURRENCY_SYMBOL}{amountPerPlayer} each)</span>
+                            <RadioGroupItem value="split" id="pay-split" />
+                        </Label>
+                    </RadioGroup>
+                </div>
+                <Separator />
+            </>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
@@ -156,6 +185,7 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
                     <FormControl>
                       <Input placeholder="e.g. RKT123ABC45" {...field} value={field.value || ''} disabled={isProcessing} />
                     </FormControl>
+                     {payer === 'split' && <p className="text-xs text-muted-foreground mt-1">Enter both reference codes separated by a comma if needed.</p>}
                     <FormMessage />
                   </FormItem>
                 )}

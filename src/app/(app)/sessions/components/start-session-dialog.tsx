@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -33,14 +33,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserPlus, X } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 const sessionFormSchema = z.object({
   customerId: z.string().min(1, "Customer is required."),
+  secondaryCustomerId: z.string().optional(),
   stationId: z.string().min(1, "Station is required."),
   gameId: z.string().min(1, "Game is required."),
   sessionType: z.enum(['per-hour', 'per-game'], { required_error: "Billing type is required." }),
   rate: z.coerce.number().min(0, "Rate must be a non-negative number.").max(10000, "Rate seems too high."),
+}).refine(data => {
+    if (data.secondaryCustomerId) {
+        return data.customerId !== data.secondaryCustomerId;
+    }
+    return true;
+}, {
+    message: "Primary and secondary customer cannot be the same.",
+    path: ["secondaryCustomerId"],
 });
 
 export type SessionFormData = z.infer<typeof sessionFormSchema>;
@@ -56,10 +66,13 @@ interface StartSessionDialogProps {
 }
 
 export default function StartSessionDialog({ isOpen, onClose, onSubmit, customers, stations, games, isSubmitting }: StartSessionDialogProps) {
+  const [showSecondPlayer, setShowSecondPlayer] = useState(false);
+  
   const form = useForm<SessionFormData>({
     resolver: zodResolver(sessionFormSchema),
     defaultValues: {
       customerId: "",
+      secondaryCustomerId: "",
       stationId: "",
       gameId: "",
       sessionType: "per-hour",
@@ -71,17 +84,21 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
     if (isOpen) {
       form.reset({
         customerId: "",
+        secondaryCustomerId: "",
         stationId: "",
         gameId: "",
         sessionType: "per-hour",
         rate: 200, 
       });
+      setShowSecondPlayer(false);
     }
   }, [isOpen, form]);
 
   const handleSubmit = (data: SessionFormData) => {
     onSubmit(data);
   };
+  
+  const primaryCustomerId = form.watch("customerId");
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -99,7 +116,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
               name="customerId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer</FormLabel>
+                  <FormLabel>Primary Customer</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                     <FormControl>
                       <SelectTrigger>
@@ -116,6 +133,47 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                 </FormItem>
               )}
             />
+
+            {showSecondPlayer && (
+              <FormField
+                control={form.control}
+                name="secondaryCustomerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Second Customer (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select second player" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {customers.filter(c => c.id !== primaryCustomerId).map(customer => (
+                          <SelectItem key={customer.id} value={customer.id}>{customer.full_name} ({customer.phone_number})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
+            {!showSecondPlayer ? (
+                <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => setShowSecondPlayer(true)}>
+                    <UserPlus className="mr-2 h-4 w-4" /> Add Second Player
+                </Button>
+            ) : (
+                <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => {
+                    setShowSecondPlayer(false);
+                    form.setValue("secondaryCustomerId", "");
+                }}>
+                    <X className="mr-2 h-4 w-4" /> Remove Second Player
+                </Button>
+            )}
+
+            <Separator />
+            
             <FormField
               control={form.control}
               name="stationId"

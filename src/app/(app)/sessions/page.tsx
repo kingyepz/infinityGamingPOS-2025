@@ -7,7 +7,7 @@ import type { Session, Customer, Station, Game } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Gamepad2, Loader2 } from 'lucide-react';
 import StartSessionDialog, { type SessionFormData } from './components/start-session-dialog';
-import EndSessionDialog from './components/end-session-dialog';
+import EndSessionDialog, { type Payer } from './components/end-session-dialog';
 import ReceiptDialog from './components/receipt-dialog';
 import ActiveSessionCard from './components/active-session-card';
 import { POINTS_PER_CURRENCY_UNIT } from '@/lib/constants';
@@ -48,7 +48,8 @@ const fetchActiveSessions = async (): Promise<Session[]> => {
       .from('sessions')
       .select(`
         *,
-        customer:customers(full_name),
+        customer:customers!customer_id(full_name),
+        secondary_customer:customers!secondary_customer_id(full_name),
         station:stations(name),
         game:games(name)
       `)
@@ -61,6 +62,7 @@ const fetchActiveSessions = async (): Promise<Session[]> => {
         ...s,
         id: s.id,
         customer_id: s.customer_id,
+        secondary_customer_id: s.secondary_customer_id,
         station_id: s.station_id,
         game_id: s.game_id,
         start_time: s.start_time,
@@ -69,6 +71,7 @@ const fetchActiveSessions = async (): Promise<Session[]> => {
         payment_status: s.payment_status as 'pending' | 'paid' | 'cancelled',
         created_at: s.created_at,
         customerName: (s.customer as any)?.full_name || 'Unknown Customer',
+        secondaryCustomerName: (s.secondary_customer as any)?.full_name || null,
         stationName: (s.station as any)?.name || 'Unknown Station',
         game_name: (s.game as any)?.name || 'Unknown Game',
     }));
@@ -130,7 +133,8 @@ export default function SessionsPage() {
   });
 
   const endSessionMutation = useMutation({
-    mutationFn: async (paidSession: Session) => {
+    mutationFn: async (params: {paidSession: Session, payer: Payer}) => {
+      const { paidSession } = params;
       const supabase = createClient();
       const { error } = await supabase
         .from('sessions')
@@ -145,18 +149,35 @@ export default function SessionsPage() {
         })
         .eq('id', paidSession.id);
       if (error) throw new Error(`Could not update session: ${error.message}`);
-      return paidSession;
+      return params;
     },
-    onSuccess: async (paidSession) => {
-      await createClient().from('stations').update({ status: 'available' }).eq('id', paidSession.station_id);
+    onSuccess: async ({ paidSession, payer }) => {
+      const supabase = createClient();
+      await supabase.from('stations').update({ status: 'available' }).eq('id', paidSession.station_id);
 
-      if (paidSession.points_earned && paidSession.points_earned > 0) {
-        const { error: loyaltyError } = await createClient().rpc('increment_loyalty_points', {
-            customer_id_param: paidSession.customer_id,
-            points_to_add: paidSession.points_earned
-        });
-        if (loyaltyError) {
-            toast({ title: "Loyalty Points Warning", description: `Could not update points: ${loyaltyError.message}`, variant: "destructive" });
+      const totalPoints = paidSession.points_earned || 0;
+      if (totalPoints > 0) {
+        const pointUpdates = [];
+        if (payer === 'primary' && paidSession.customer_id) {
+          pointUpdates.push({ customer_id_param: paidSession.customer_id, points_to_add: totalPoints });
+        } else if (payer === 'secondary' && paidSession.secondary_customer_id) {
+          pointUpdates.push({ customer_id_param: paidSession.secondary_customer_id, points_to_add: totalPoints });
+        } else if (payer === 'split') {
+          const splitPoints = Math.floor(totalPoints / 2);
+          if (paidSession.customer_id) {
+            pointUpdates.push({ customer_id_param: paidSession.customer_id, points_to_add: splitPoints });
+          }
+          if (paidSession.secondary_customer_id) {
+            // Give remaining points to second player in case of odd total
+            pointUpdates.push({ customer_id_param: paidSession.secondary_customer_id, points_to_add: totalPoints - splitPoints });
+          }
+        }
+        
+        for (const update of pointUpdates) {
+          const { error: loyaltyError } = await supabase.rpc('increment_loyalty_points', update);
+          if (loyaltyError) {
+              toast({ title: "Loyalty Points Warning", description: `Could not update points for a customer: ${loyaltyError.message}`, variant: "destructive" });
+          }
         }
       }
       
@@ -177,7 +198,7 @@ export default function SessionsPage() {
 
   // --- Event Handlers ---
   const handleStartSession = (formData: SessionFormData) => {
-    const newSessionPayload = {
+    const newSessionPayload: Partial<Session> = {
       customer_id: formData.customerId,
       station_id: formData.stationId,
       game_id: formData.gameId,
@@ -185,6 +206,7 @@ export default function SessionsPage() {
       start_time: new Date().toISOString(),
       amount_charged: formData.rate, // Use amount_charged to store rate initially
       payment_status: 'pending' as const,
+      secondary_customer_id: formData.secondaryCustomerId || null,
     };
     startSessionMutation.mutate(newSessionPayload);
   };
@@ -213,8 +235,8 @@ export default function SessionsPage() {
     });
   };
 
-  const handleProcessPayment = (paidSession: Session) => {
-    endSessionMutation.mutate(paidSession);
+  const handleProcessPayment = (paidSession: Session, payer: Payer) => {
+    endSessionMutation.mutate({ paidSession, payer });
   };
   
   const isLoading = isLoadingCustomers || isLoadingStations || isLoadingSessions || isLoadingGames;

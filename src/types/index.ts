@@ -1,4 +1,5 @@
 
+
 export interface Customer {
   id: string; // UUID from Supabase
   created_at: string; // Supabase returns TIMESTAMPTZ as a string
@@ -43,6 +44,7 @@ export interface Game {
 export interface Session {
   id: string; // uuid
   customer_id: string; // uuid
+  secondary_customer_id?: string | null; // uuid for second player
   station_id: string; // uuid
   game_id?: string | null; // uuid
   start_time: string; // timestamptz
@@ -59,6 +61,7 @@ export interface Session {
   
   // Client-side fields for UI display, state management, and calculations
   customerName: string; // Fetched via join or lookup
+  secondaryCustomerName?: string | null; // Fetched via join
   stationName: string; // Fetched via join or lookup
   game_name?: string; // Fetched via join or lookup
   rate: number; // For calculation, not stored directly in DB

@@ -4,7 +4,7 @@
 import type { Session } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Play, Clock, Loader2, Gamepad2 } from 'lucide-react';
+import { Users, Clock, Loader2, Gamepad2, Play } from 'lucide-react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import React, { useState, useEffect } from 'react';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
@@ -29,6 +29,8 @@ export default function ActiveSessionCard({ session, onEndSession, isEnding }: A
       return () => clearInterval(timer);
     }
   }, [session.start_time]);
+
+  const hasTwoPlayers = !!session.secondaryCustomerName;
   
   return (
     <Card className="flex flex-col shadow-lg hover:shadow-xl transition-shadow duration-300 bg-card/80 backdrop-blur-sm">
@@ -36,7 +38,10 @@ export default function ActiveSessionCard({ session, onEndSession, isEnding }: A
         <div className="flex justify-between items-start">
             <div>
                 <CardTitle className="text-lg font-headline truncate text-primary">{session.stationName}</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">{session.customerName}</CardDescription>
+                <CardDescription className="flex items-center text-sm text-muted-foreground">
+                    <Users className="h-4 w-4 mr-2" />
+                    <span className="truncate">{session.customerName}{hasTwoPlayers ? ` & ${session.secondaryCustomerName}` : ''}</span>
+                </CardDescription>
             </div>
         </div>
       </CardHeader>
