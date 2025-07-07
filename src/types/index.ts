@@ -46,3 +46,11 @@ export interface SupportTicket {
   createdAt: Date;
   status: 'new' | 'categorized' | 'resolved';
 }
+
+export interface Staff {
+    id: string;
+    name: string;
+    initials: string;
+    revenueToday: number;
+    sessions: number;
+}
