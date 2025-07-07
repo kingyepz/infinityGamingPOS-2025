@@ -8,12 +8,12 @@ import { StatCard } from '@/components/ui/stat-card';
 import { WelcomeHeader } from './components/WelcomeHeader';
 import { QuickActions } from './components/QuickActions';
 import { RevenueTrendChart } from './components/RevenueTrendChart';
-import { SessionTypeDistributionChart } from './components/SessionTypeDistributionChart';
 import { HourlyActivityChart } from './components/HourlyActivityChart';
 import { RecentActivityTabs } from './components/RecentActivityTabs';
 import { PaymentMethodChart } from './components/PaymentMethodChart';
 import { ConsoleUtilization } from './components/ConsoleUtilization';
-import { StaffPerformance } from './components/StaffPerformance';
+import { TopCustomers } from './components/TopCustomers';
+import { PopularGamesChart } from './components/PopularGamesChart';
 import { createClient } from '@/lib/supabase/client';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 
@@ -26,7 +26,6 @@ const fetchDashboardStats = async () => {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  // Updated to use the 'sessions' table and correct column names
   const promises = [
     supabase.from('sessions').select('*', { count: 'exact', head: true }).eq('payment_status', 'pending'),
     supabase.from('sessions').select('amount_charged, duration_minutes').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
@@ -34,6 +33,7 @@ const fetchDashboardStats = async () => {
     supabase.from('sessions').select('amount_charged').eq('payment_status', 'cancelled').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
     supabase.from('sessions').select('points_earned').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
     supabase.from('customers').select('*', { count: 'exact', head: true }),
+    supabase.from('customers').select('loyalty_points'), // For total points
   ];
 
   const [
@@ -42,10 +42,10 @@ const fetchDashboardStats = async () => {
     newCustomersResult,
     cancelledSessionsResult,
     loyaltyDataResult,
-    totalCustomersResult
+    totalCustomersResult,
+    allCustomersForPointsResult,
   ] = await Promise.all(promises);
 
-  // Centralized and more specific error handling
   const results = {
     activeSessions: activeSessionsResult,
     paidSessions: paidSessionsResult,
@@ -53,6 +53,7 @@ const fetchDashboardStats = async () => {
     cancelledSessions: cancelledSessionsResult,
     loyaltyData: loyaltyDataResult,
     totalCustomers: totalCustomersResult,
+    allCustomersForPoints: allCustomersForPointsResult,
   };
 
   for (const [key, result] of Object.entries(results)) {
@@ -62,15 +63,14 @@ const fetchDashboardStats = async () => {
     }
   }
   
-  // If we get here, all queries were successful. Safely access data.
   const activeSessionsCount = activeSessionsResult.count ?? 0;
   const paidSessions = paidSessionsResult.data || [];
   const newCustomersCount = newCustomersResult.count ?? 0;
   const cancelledSessions = cancelledSessionsResult.data || [];
   const loyaltyData = loyaltyDataResult.data || [];
   const totalCustomersCount = totalCustomersResult.count ?? 0;
+  const allCustomersForPoints = allCustomersForPointsResult.data || [];
 
-  // Calculations updated for the 'sessions' table schema
   const todaysRevenue = paidSessions.reduce((sum, s) => sum + (s.amount_charged || 0), 0) || 0;
   const transactionCount = paidSessions.length || 0;
   const avgTransactionValue = transactionCount > 0 ? todaysRevenue / transactionCount : 0;
@@ -78,6 +78,7 @@ const fetchDashboardStats = async () => {
   const totalDuration = paidSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) || 0;
   const avgSessionDurationMins = transactionCount > 0 ? totalDuration / transactionCount : 0;
   const loyaltyPointsToday = loyaltyData.reduce((sum, s) => sum + (s.points_earned || 0), 0) || 0;
+  const totalLoyaltyPoints = allCustomersForPoints.reduce((sum, c) => sum + (c.loyalty_points || 0), 0) || 0;
 
   return {
     activeSessionsCount,
@@ -89,6 +90,7 @@ const fetchDashboardStats = async () => {
     refundsTodayCount: cancelledSessions.length || 0,
     avgSessionDuration: `${Math.floor(avgSessionDurationMins / 60)}h ${Math.round(avgSessionDurationMins % 60)}min`,
     loyaltyPointsToday,
+    totalLoyaltyPoints,
   };
 };
 
@@ -97,12 +99,9 @@ export default function DashboardPage() {
     const { data: stats, isLoading, isError, error } = useQuery({
         queryKey: ['dashboardStats'],
         queryFn: fetchDashboardStats,
-        refetchInterval: 30000, // Refetch every 30 seconds
+        refetchInterval: 30000,
     });
     
-    // In a real app, user role would likely come from context or a dedicated user hook
-    const userRole = 'admin'; // For demonstration
-
   return (
     <div className="flex-1 space-y-6 bg-muted/30 p-4 sm:p-6 lg:p-8">
       <WelcomeHeader />
@@ -153,10 +152,11 @@ export default function DashboardPage() {
           isLoading={isLoading}
         />
          <StatCard
-          title="Refunds / Voids"
-          value={`${CURRENCY_SYMBOL} ${stats?.refundsTodayValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}`}
-          icon={ShieldX}
-          description={`${stats?.refundsTodayCount ?? 0} transactions voided today`}
+          title="Total Loyalty Points"
+          value={stats?.totalLoyaltyPoints.toLocaleString() ?? '0'}
+          icon={Star}
+          description="All points held by customers"
+          linkTo='/loyalty'
           isLoading={isLoading}
         />
          <StatCard
@@ -167,7 +167,7 @@ export default function DashboardPage() {
           isLoading={isLoading}
         />
          <StatCard
-          title="Loyalty Points Earned"
+          title="Loyalty Points Earned Today"
           value={stats?.loyaltyPointsToday.toLocaleString() ?? '0'}
           icon={Star}
           description="Total points awarded today"
@@ -177,18 +177,21 @@ export default function DashboardPage() {
 
       <QuickActions />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-           <RevenueTrendChart />
-           <ConsoleUtilization />
-           <HourlyActivityChart />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+                <RevenueTrendChart />
+                <HourlyActivityChart />
+                <PopularGamesChart />
+            </div>
+            <div className="space-y-6 lg:col-span-1">
+                <TopCustomers />
+                <PaymentMethodChart />
+                <ConsoleUtilization />
+            </div>
         </div>
-        <div className="lg:col-span-1 space-y-6">
-          <PaymentMethodChart />
-          <RecentActivityTabs />
-          {userRole === 'admin' && <StaffPerformance />}
+        <div className="grid grid-cols-1 pt-6">
+            <RecentActivityTabs />
         </div>
-      </div>
     </div>
   );
 }
