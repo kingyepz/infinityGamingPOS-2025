@@ -23,9 +23,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Explicitly define payloads for clarity and robustness
-type AddCustomerPayload = Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'join_date' | 'loyalty_tier' | 'loyalty_points'>;
-type UpdateCustomerPayload = Pick<Customer, 'id' | 'full_name' | 'phone_number' | 'email' | 'loyalty_points' | 'loyalty_tier'>;
+// Explicitly define payloads for clarity
+type AddCustomerPayload = Omit<CustomerFormData, 'loyalty_points' | 'loyalty_tier'>;
 
 // Define functions to interact with Supabase
 const fetchCustomers = async (): Promise<Customer[]> => {
@@ -67,14 +66,6 @@ const addCustomer = async (customer: AddCustomerPayload) => {
   return newCustomer;
 };
 
-const updateCustomer = async (customer: UpdateCustomerPayload) => {
-  const supabase = createClient();
-  const { id, ...updateData } = customer;
-  const { data, error } = await supabase.from('customers').update(updateData).eq('id', id).select().single();
-  if (error) throw new Error(error.message);
-  return data;
-};
-
 const deleteCustomer = async (customerId: string) => {
   const supabase = createClient();
   const { error } = await supabase.from('customers').delete().eq('id', customerId);
@@ -85,8 +76,7 @@ export default function CustomersPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   const { data: customers, isLoading, isError, error } = useQuery<Customer[]>({
@@ -99,22 +89,8 @@ export default function CustomersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['customers-loyalty'] }); // Invalidate loyalty page data
-      toast({ title: "Customer Added", description: "The new customer has been registered successfully and awarded 50 bonus points." });
-      setIsFormOpen(false);
-    },
-    onError: (err: Error) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: updateCustomer,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['customers-loyalty'] });
-      toast({ title: "Customer Updated", description: "The customer's details have been updated." });
-      setIsFormOpen(false);
-      setSelectedCustomer(null);
+      toast({ title: "Customer Added", description: "The new customer has been registered and awarded 50 bonus points." });
+      setIsAddFormOpen(false);
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -125,6 +101,7 @@ export default function CustomersPage() {
     mutationFn: deleteCustomer,
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['customers'] });
+        queryClient.invalidateQueries({ queryKey: ['customer', customerToDelete?.id]});
         queryClient.invalidateQueries({ queryKey: ['customers-loyalty'] });
         toast({ title: "Customer Deleted", description: `${customerToDelete?.full_name} has been removed.` });
         setCustomerToDelete(null);
@@ -135,16 +112,6 @@ export default function CustomersPage() {
     }
   });
 
-
-  const handleAddCustomer = () => {
-    setSelectedCustomer(null);
-    setIsFormOpen(true);
-  };
-
-  const handleEditCustomer = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setIsFormOpen(true);
-  };
 
   const handleDeleteCustomer = (customer: Customer) => {
     setCustomerToDelete(customer);
@@ -157,60 +124,36 @@ export default function CustomersPage() {
   };
 
   const handleFormSubmit = (formData: CustomerFormData) => {
-    if (selectedCustomer) {
-      updateMutation.mutate({
-        id: selectedCustomer.id,
-        full_name: formData.full_name,
-        phone_number: formData.phone_number,
-        email: formData.email,
-        loyalty_points: formData.loyalty_points ?? selectedCustomer.loyalty_points,
-        loyalty_tier: formData.loyalty_tier ?? selectedCustomer.loyalty_tier,
-      });
-    } else {
-      // The addMutation now handles the bonus points transaction internally.
-      addMutation.mutate({
-        full_name: formData.full_name,
-        phone_number: formData.phone_number,
-        email: formData.email,
-      });
-    }
+    // This form is now only for adding customers
+    addMutation.mutate({
+      full_name: formData.full_name,
+      phone_number: formData.phone_number,
+      email: formData.email,
+    });
   };
-
-  const isMutating = addMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-6">
        <div className="flex justify-between items-center">
         <h2 className="text-2xl font-headline font-semibold">Manage Customers</h2>
-        <Dialog open={isFormOpen} onOpenChange={(open) => {
-          if (isMutating) return; // Prevent closing while submitting
-          setIsFormOpen(open);
-          if (!open) setSelectedCustomer(null);
+        <Dialog open={isAddFormOpen} onOpenChange={(open) => {
+          if (addMutation.isPending) return;
+          setIsAddFormOpen(open);
         }}>
           <DialogTrigger asChild>
-            <Button onClick={handleAddCustomer}>
+            <Button onClick={() => setIsAddFormOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" /> Add Customer
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{selectedCustomer ? 'Edit Customer' : 'Add New Customer'}</DialogTitle>
+              <DialogTitle>Add New Customer</DialogTitle>
             </DialogHeader>
             <CustomerForm 
-              onSubmit={handleFormSubmit} 
-              defaultValues={selectedCustomer ? { 
-                  full_name: selectedCustomer.full_name, 
-                  phone_number: selectedCustomer.phone_number, 
-                  email: selectedCustomer.email,
-                  loyalty_points: selectedCustomer.loyalty_points,
-                  loyalty_tier: selectedCustomer.loyalty_tier,
-              } : undefined} 
-              onCancel={() => {
-                setIsFormOpen(false);
-                setSelectedCustomer(null);
-              }}
-              isSubmitting={isMutating}
-              isEditMode={!!selectedCustomer}
+              onSubmit={handleFormSubmit}
+              onCancel={() => setIsAddFormOpen(false)}
+              isSubmitting={addMutation.isPending}
+              isEditMode={false}
             />
           </DialogContent>
         </Dialog>
@@ -238,7 +181,6 @@ export default function CustomersPage() {
       {!isLoading && !isError && (
         <CustomerTable 
           customers={customers || []} 
-          onEdit={handleEditCustomer} 
           onDelete={handleDeleteCustomer} 
         />
       )}
@@ -249,7 +191,7 @@ export default function CustomersPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure you want to delete {customerToDelete.full_name}?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the customer record.
+                This action cannot be undone. This will permanently delete the customer record and all associated loyalty history.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

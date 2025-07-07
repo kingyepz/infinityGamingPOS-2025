@@ -4,14 +4,14 @@
 import type { Customer } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2 } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface CustomerTableProps {
   customers: Customer[];
-  onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
 }
 
@@ -37,7 +37,7 @@ const getTierClassName = (tier: string = 'Bronze'): string => {
 }
 
 
-export default function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProps) {
+export default function CustomerTable({ customers, onDelete }: CustomerTableProps) {
   if (!customers || customers.length === 0) {
     return <p className="text-center text-muted-foreground py-8">No customers registered yet. Click 'Add Customer' to begin.</p>;
   }
@@ -76,8 +76,10 @@ export default function CustomerTable({ customers, onEdit, onDelete }: CustomerT
                 {customer.join_date ? format(new Date(customer.join_date), 'PPP') : 'N/A'}
               </TableCell>
               <TableCell className="text-right space-x-2 whitespace-nowrap">
-                <Button variant="outline" size="icon" onClick={() => onEdit(customer)} aria-label={`Edit ${customer.full_name}`}>
-                  <Edit className="h-4 w-4" />
+                <Button asChild variant="outline" size="icon" aria-label={`View details for ${customer.full_name}`}>
+                  <Link href={`/customers/${customer.id}`}>
+                    <Eye className="h-4 w-4" />
+                  </Link>
                 </Button>
                 <Button variant="destructive" size="icon" onClick={() => onDelete(customer)} aria-label={`Delete ${customer.full_name}`}>
                   <Trash2 className="h-4 w-4" />

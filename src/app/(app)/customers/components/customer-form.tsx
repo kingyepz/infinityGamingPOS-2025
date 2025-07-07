@@ -115,7 +115,7 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubm
           <>
             <Separator />
             <div className="space-y-2">
-              <h3 className="text-sm font-medium text-muted-foreground">Loyalty Program</h3>
+              <h3 className="text-sm font-medium text-muted-foreground">Loyalty Program (Read-Only)</h3>
               <div className="grid grid-cols-2 gap-4">
                  <FormField
                   control={form.control}
@@ -124,7 +124,7 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubm
                     <FormItem>
                       <FormLabel>Loyalty Points</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} disabled={isSubmitting} onChange={event => field.onChange(+event.target.value)} />
+                        <Input type="number" {...field} disabled={true} onChange={event => field.onChange(+event.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -136,7 +136,7 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubm
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Loyalty Tier</FormLabel>
-                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                       <Select onValueChange={field.onChange} defaultValue={field.value} disabled={true}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a tier" />
