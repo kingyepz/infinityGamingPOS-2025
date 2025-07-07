@@ -31,7 +31,7 @@ const fetchDashboardStats = async () => {
     supabase.from('sessions').select('amount_charged, duration_minutes').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
     supabase.from('customers').select('*', { count: 'exact', head: true }).gte('join_date', todayStart.toISOString()).lte('join_date', todayEnd.toISOString()),
     supabase.from('sessions').select('amount_charged').eq('payment_status', 'cancelled').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
-    supabase.from('sessions').select('points_earned').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
+    supabase.from('loyalty_transactions').select('points').gte('created_at', todayStart.toISOString()).lte('created_at', todayEnd.toISOString()).in('transaction_type', ['earn', 'bonus']),
     supabase.from('customers').select('*', { count: 'exact', head: true }),
     supabase.from('customers').select('loyalty_points'), // For total points
   ];
@@ -77,7 +77,7 @@ const fetchDashboardStats = async () => {
   const refundsTodayValue = cancelledSessions.reduce((sum, s) => sum + (s.amount_charged || 0), 0) || 0;
   const totalDuration = paidSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) || 0;
   const avgSessionDurationMins = transactionCount > 0 ? totalDuration / transactionCount : 0;
-  const loyaltyPointsToday = loyaltyData.reduce((sum, s) => sum + (s.points_earned || 0), 0) || 0;
+  const loyaltyPointsToday = loyaltyData.reduce((sum, t) => sum + (t.points || 0), 0) || 0;
   const totalLoyaltyPoints = allCustomersForPoints.reduce((sum, c) => sum + (c.loyalty_points || 0), 0) || 0;
 
   return {
