@@ -23,8 +23,8 @@ const phoneRegex = new RegExp(
 );
 
 const customerFormSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  phone: z.string().regex(phoneRegex, 'Invalid phone number').min(10, { message: "Phone number must be at least 10 digits."}),
+  full_name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  phone_number: z.string().regex(phoneRegex, 'Invalid phone number').min(10, { message: "Phone number must be at least 10 digits."}),
   email: z.string().email({ message: "Invalid email address." }),
 });
 
@@ -41,15 +41,15 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubm
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
-      name: "",
-      phone: "",
+      full_name: "",
+      phone_number: "",
       email: "",
       ...defaultValues
     },
   });
 
   React.useEffect(() => {
-    form.reset(defaultValues || { name: "", phone: "", email: "" });
+    form.reset(defaultValues || { full_name: "", phone_number: "", email: "" });
   }, [defaultValues, form]);
 
 
@@ -62,7 +62,7 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubm
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
-          name="name"
+          name="full_name"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Full Name</FormLabel>
@@ -75,7 +75,7 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubm
         />
         <FormField
           control={form.control}
-          name="phone"
+          name="phone_number"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Phone Number</FormLabel>

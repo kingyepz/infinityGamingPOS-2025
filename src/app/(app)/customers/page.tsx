@@ -23,6 +23,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 
+type AddCustomerPayload = Omit<Customer, 'id' | 'created_at' | 'loyalty_points' | 'loyalty_tier'>;
+type UpdateCustomerPayload = Omit<Customer, 'created_at' | 'loyalty_points' | 'loyalty_tier'>;
+
 // Define functions to interact with Supabase
 const fetchCustomers = async () => {
   const supabase = createClient();
@@ -31,14 +34,14 @@ const fetchCustomers = async () => {
   return data as Customer[];
 };
 
-const addCustomer = async (customer: Omit<Customer, 'id' | 'created_at' | 'loyalty_points'>) => {
+const addCustomer = async (customer: AddCustomerPayload) => {
   const supabase = createClient();
   const { data, error } = await supabase.from('customers').insert([customer]).select().single();
   if (error) throw new Error(error.message);
   return data;
 };
 
-const updateCustomer = async (customer: Omit<Customer, 'created_at' | 'loyalty_points'>) => {
+const updateCustomer = async (customer: UpdateCustomerPayload) => {
   const supabase = createClient();
   const { id, ...updateData } = customer;
   const { data, error } = await supabase.from('customers').update(updateData).eq('id', id).select().single();
@@ -94,7 +97,7 @@ export default function CustomersPage() {
     mutationFn: deleteCustomer,
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['customers'] });
-        toast({ title: "Customer Deleted", description: `${customerToDelete?.name} has been removed.` });
+        toast({ title: "Customer Deleted", description: `${customerToDelete?.full_name} has been removed.` });
         setCustomerToDelete(null);
     },
     onError: (err: Error) => {
@@ -124,9 +127,9 @@ export default function CustomersPage() {
     }
   };
 
-  const handleFormSubmit = (formData: { name: string; phone: string; email: string; }) => {
+  const handleFormSubmit = (formData: { full_name: string; phone_number: string; email: string; }) => {
     if (selectedCustomer) {
-      updateMutation.mutate({ ...selectedCustomer, ...formData });
+      updateMutation.mutate({ id: selectedCustomer.id, ...formData });
     } else {
       addMutation.mutate(formData);
     }
@@ -154,7 +157,7 @@ export default function CustomersPage() {
             </DialogHeader>
             <CustomerForm 
               onSubmit={handleFormSubmit} 
-              defaultValues={selectedCustomer ? { name: selectedCustomer.name, phone: selectedCustomer.phone, email: selectedCustomer.email } : undefined} 
+              defaultValues={selectedCustomer ? { full_name: selectedCustomer.full_name, phone_number: selectedCustomer.phone_number, email: selectedCustomer.email } : undefined} 
               onCancel={() => {
                 setIsFormOpen(false);
                 setSelectedCustomer(null);
@@ -196,7 +199,7 @@ export default function CustomersPage() {
         <AlertDialog open={!!customerToDelete} onOpenChange={() => setCustomerToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure you want to delete {customerToDelete.name}?</AlertDialogTitle>
+              <AlertDialogTitle>Are you sure you want to delete {customerToDelete.full_name}?</AlertDialogTitle>
               <AlertDialogDescription>
                 This action cannot be undone. This will permanently delete the customer record.
               </AlertDialogDescription>

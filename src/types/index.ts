@@ -1,10 +1,11 @@
 
 export interface Customer {
   id: string; // UUID from Supabase
-  name: string;
-  phone: string;
+  full_name: string;
+  phone_number: string;
   email: string;
   loyalty_points: number;
+  loyalty_tier: string;
   created_at: string; // Supabase returns TIMESTAMPTZ as a string
 }
 
