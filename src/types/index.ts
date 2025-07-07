@@ -12,19 +12,31 @@ export interface Customer {
 }
 
 export interface Station {
-  id: string;
-  name: string;
-  console_type: string;
-  status: 'available' | 'in-use' | 'maintenance';
-  created_at: string;
+  id: string; // uuid
+  name: string; // text
+  type: string; // text - Changed from console_type
+  status: 'available' | 'in-use' | 'maintenance'; // text
+  location?: string | null; // text
+  notes?: string | null; // text
+  created_at: string; // timestamptz
+  updated_at: string; // timestamptz
 }
 
 export interface Game {
-  id: string;
-  name: string;
-  genre: string;
-  created_at: string;
+  id: string; // uuid
+  name: string; // text
+  platforms?: string[] | null; // text[]
+  genre?: string | null; // text
+  description?: string | null; // text
+  cover_image_url?: string | null; // text
+  release_date?: string | null; // date
+  developer?: string | null; // text
+  publisher?: string | null; // text
+  is_active: boolean; // boolean
+  created_at: string; // timestamptz
+  updated_at: string; // timestamptz
 }
+
 
 // This interface now more closely matches the 'sessions' table schema.
 // UI-specific or calculated fields are kept separate or clearly marked.

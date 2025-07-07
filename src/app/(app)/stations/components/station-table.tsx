@@ -45,7 +45,7 @@ export default function StationTable({ stations, onEdit, onDelete }: StationTabl
           {stations.map((station) => (
             <TableRow key={station.id}>
               <TableCell className="font-medium whitespace-nowrap">{station.name}</TableCell>
-              <TableCell className="whitespace-nowrap">{station.console_type}</TableCell>
+              <TableCell className="whitespace-nowrap">{station.type}</TableCell>
               <TableCell>
                 <Badge variant={getStatusVariant(station.status)} className={cn(
                     "capitalize", 

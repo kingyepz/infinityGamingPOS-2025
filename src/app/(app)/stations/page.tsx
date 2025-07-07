@@ -31,14 +31,14 @@ const fetchStations = async (): Promise<Station[]> => {
   return data;
 };
 
-const addStation = async (station: Omit<Station, 'id' | 'created_at' | 'status'>) => {
+const addStation = async (station: Omit<Station, 'id' | 'created_at' | 'status' | 'updated_at'>) => {
   const supabase = createClient();
   const { data, error } = await supabase.from('stations').insert([station]).select().single();
   if (error) throw new Error(error.message);
   return data;
 };
 
-const updateStation = async (station: Pick<Station, 'id' | 'name' | 'console_type'>) => {
+const updateStation = async (station: Pick<Station, 'id' | 'name' | 'type'>) => {
   const supabase = createClient();
   const { id, ...updateData } = station;
   const { data, error } = await supabase.from('stations').update(updateData).eq('id', id).select().single();
@@ -132,7 +132,8 @@ export default function StationsPage() {
     if (selectedStation) {
       updateMutation.mutate({
         id: selectedStation.id,
-        ...formData
+        name: formData.name,
+        type: formData.type,
       });
     } else {
       addMutation.mutate(formData);
@@ -163,7 +164,7 @@ export default function StationsPage() {
               onSubmit={handleFormSubmit} 
               defaultValues={selectedStation ? { 
                   name: selectedStation.name, 
-                  console_type: selectedStation.console_type,
+                  type: selectedStation.type,
               } : undefined} 
               onCancel={() => {
                 setIsFormOpen(false);

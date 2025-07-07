@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const stationFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  console_type: z.string().min(3, { message: "Please select a console type." }),
+  type: z.string().min(3, { message: "Please select a console type." }),
 });
 
 export type StationFormData = z.infer<typeof stationFormSchema>;
@@ -48,13 +48,13 @@ export default function StationForm({ onSubmit, defaultValues, onCancel, isSubmi
     resolver: zodResolver(stationFormSchema),
     defaultValues: {
       name: "",
-      console_type: "",
+      type: "",
       ...defaultValues
     },
   });
 
   React.useEffect(() => {
-    form.reset(defaultValues || { name: "", console_type: "" });
+    form.reset(defaultValues || { name: "", type: "" });
   }, [defaultValues, form]);
 
 
@@ -80,7 +80,7 @@ export default function StationForm({ onSubmit, defaultValues, onCancel, isSubmi
         />
         <FormField
           control={form.control}
-          name="console_type"
+          name="type"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Console Type</FormLabel>
