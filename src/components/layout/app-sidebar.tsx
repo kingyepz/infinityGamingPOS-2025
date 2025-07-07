@@ -2,13 +2,14 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { 
@@ -16,7 +17,6 @@ import {
   Users, 
   Gamepad2 as GamepadIcon,
   BrainCircuit,
-  Tv,
   Play,
   Album,
   CreditCard,
@@ -24,6 +24,7 @@ import {
   Swords,
   Settings,
   CircleUser,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import React, { useState, useEffect } from 'react';
@@ -48,12 +49,19 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { state } = useSidebar();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClient();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   useEffect(() => {
-    const supabase = createClient();
     const fetchUserRole = async () => {
       setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -83,7 +91,7 @@ export function AppSidebar() {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, []);
+  }, [supabase]);
 
   const filteredNavItems = React.useMemo(() => {
     if (isLoading || !userRole) {
@@ -109,7 +117,7 @@ export function AppSidebar() {
           </span>
         </Link>
       </SidebarHeader>
-      <SidebarContent className="p-2">
+      <SidebarContent className="p-2 flex-1">
         <SidebarMenu>
           {isLoading && Array.from({ length: 5 }).map((_, index) => (
              <SidebarMenuItem key={index} className="px-2">
@@ -145,6 +153,14 @@ export function AppSidebar() {
           })}
         </SidebarMenu>
       </SidebarContent>
+      <SidebarFooter className="p-2 border-t border-sidebar-border">
+          <SidebarMenuItem>
+              <SidebarMenuButton onClick={handleSignOut} className="font-body text-base font-medium" size="lg">
+                  <LogOut className="h-5 w-5 text-sidebar-foreground/70 group-hover:text-sidebar-foreground" />
+                  <span>Log Out</span>
+              </SidebarMenuButton>
+          </SidebarMenuItem>
+      </SidebarFooter>
     </>
   );
 }

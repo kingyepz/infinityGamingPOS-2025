@@ -28,7 +28,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from '@/components/ui/separator';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Split } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 export type Payer = 'primary' | 'secondary' | 'split';
@@ -133,7 +133,10 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
                             <RadioGroupItem value="secondary" id="pay-secondary" />
                         </Label>
                         <Label htmlFor="pay-split" className="flex items-center justify-between rounded-md border p-3 hover:bg-accent has-[[data-state=checked]]:border-primary">
-                            <span>Split bill 50/50 ({CURRENCY_SYMBOL}{amountPerPlayer} each)</span>
+                            <span className="flex items-center">
+                                <Split className="h-4 w-4 mr-2 text-muted-foreground" />
+                                Split bill 50/50 ({CURRENCY_SYMBOL}{amountPerPlayer} each)
+                            </span>
                             <RadioGroupItem value="split" id="pay-split" />
                         </Label>
                     </RadioGroup>
