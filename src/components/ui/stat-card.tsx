@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from "@/lib/utils"
+import { Skeleton } from './skeleton';
 
 interface StatCardProps {
   title: string;
@@ -12,18 +13,31 @@ interface StatCardProps {
   icon: LucideIcon;
   description?: string | React.ReactNode;
   linkTo?: string;
+  isLoading?: boolean;
 }
 
-export function StatCard({ title, value, icon: Icon, description, linkTo }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, description, linkTo, isLoading }: StatCardProps) {
+  
   const cardContent = (
-    <Card className={cn("shadow-md", linkTo && "hover:bg-muted/50 transition-colors duration-200")}>
+    <Card className={cn(
+      "shadow-md hover:shadow-lg transition-shadow", 
+      linkTo && "hover:bg-muted/50 duration-200"
+    )}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         <Icon className="h-5 w-5 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl lg:text-3xl font-bold font-headline">{value}</div>
-        {description && <p className="text-xs text-muted-foreground pt-1">{description}</p>}
+        {isLoading ? (
+          <Skeleton className="h-8 w-3/4" />
+        ) : (
+          <div className="text-2xl lg:text-3xl font-bold font-headline">{value}</div>
+        )}
+        {isLoading ? (
+            <Skeleton className="h-4 w-full mt-1" />
+        ) : (
+            description && <p className="text-xs text-muted-foreground pt-1">{description}</p>
+        )}
       </CardContent>
     </Card>
   );

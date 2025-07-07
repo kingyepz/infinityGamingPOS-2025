@@ -1,12 +1,13 @@
 
+
 export interface Customer {
   id: string; // UUID from Supabase
+  created_at: string; // Supabase returns TIMESTAMPTZ as a string
   full_name: string;
   phone_number: string;
   email: string;
   loyalty_points: number;
   loyalty_tier: string;
-  created_at: string; // Supabase returns TIMESTAMPTZ as a string
 }
 
 export interface GameConsole {
@@ -17,26 +18,27 @@ export interface GameConsole {
 }
 
 export interface GameSession {
-  id:string;
-  customerId: string;
-  customerName: string;
-  consoleId: string;
-  consoleName: string;
-  gameName: string;
-  startTime: Date;
-  endTime?: Date;
-  billingType: 'per-hour' | 'per-game';
-  rate: number; // Hourly rate or per-game cost - Made this required
-  durationMinutes?: number; // For hourly billing
-  subtotalAmount?: number;
-  vatAmount?: number;
-  totalAmount?: number; // Subtotal + VAT
-  paymentStatus: 'pending' | 'paid' | 'cancelled';
-  paymentMethod?: 'cash' | 'mpesa';
-  mpesaReference?: string;
-  pointsAwarded?: number;
-  createdAt: Date;
+  id: string; // UUID
+  created_at: string; // TIMESTAMPTZ
+  customer_id: string;
+  customerName?: string; // This can be joined in queries, not a direct column
+  console_id: string;
+  console_name: string;
+  game_name: string;
+  start_time: string; // TIMESTAMPTZ
+  end_time?: string | null; // TIMESTAMPTZ
+  billing_type: 'per-hour' | 'per-game';
+  rate: number; // NUMERIC
+  duration_minutes?: number | null; // INTEGER
+  subtotal_amount?: number | null; // NUMERIC
+  vat_amount?: number | null; // NUMERIC
+  total_amount?: number | null; // NUMERIC
+  payment_status: 'pending' | 'paid' | 'cancelled'; // TEXT
+  payment_method?: 'cash' | 'mpesa' | null; // TEXT
+  mpesa_reference?: string | null; // TEXT
+  points_awarded?: number | null; // INTEGER
 }
+
 
 export interface SupportTicket {
   id: string;
