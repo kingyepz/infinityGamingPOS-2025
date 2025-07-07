@@ -28,6 +28,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from '@/components/ui/separator';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 import { format } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 
 const paymentFormSchema = z.object({
   paymentMethod: z.enum(['cash', 'mpesa'], { required_error: "Payment method is required." }),
@@ -49,9 +50,10 @@ interface EndSessionDialogProps {
   onClose: () => void;
   session: Session;
   onProcessPayment: (paidSession: Session) => void;
+  isProcessing: boolean;
 }
 
-export default function EndSessionDialog({ isOpen, onClose, session, onProcessPayment }: EndSessionDialogProps) {
+export default function EndSessionDialog({ isOpen, onClose, session, onProcessPayment, isProcessing }: EndSessionDialogProps) {
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
@@ -69,7 +71,7 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
         mpesaReference: "",
       });
     }
-  }, [isOpen, form, session]);
+  }, [isOpen, form]);
 
 
   const handleSubmit = (data: PaymentFormData) => {
@@ -84,7 +86,7 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) onClose();
+      if (!open && !isProcessing) onClose();
     }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -124,6 +126,7 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                       className="flex space-x-4"
+                      disabled={isProcessing}
                     >
                       <FormItem className="flex items-center space-x-2 space-y-0">
                         <FormControl>
@@ -151,7 +154,7 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
                   <FormItem>
                     <FormLabel>MPesa Reference Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. RKT123ABC45" {...field} value={field.value || ''} />
+                      <Input placeholder="e.g. RKT123ABC45" {...field} value={field.value || ''} disabled={isProcessing} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -159,8 +162,11 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
               />
             )}
             <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit">Confirm Payment</Button>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isProcessing}>Cancel</Button>
+              <Button type="submit" disabled={isProcessing}>
+                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Confirm Payment
+              </Button>
             </DialogFooter>
           </form>
         </Form>

@@ -2,120 +2,182 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Session, Customer, Station } from '@/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Gamepad2 } from 'lucide-react';
+import { PlusCircle, Gamepad2, Loader2 } from 'lucide-react';
 import StartSessionDialog, { type SessionFormData } from './components/start-session-dialog';
 import EndSessionDialog from './components/end-session-dialog';
 import ReceiptDialog from './components/receipt-dialog';
 import ActiveSessionCard from './components/active-session-card';
-import { MOCK_STATIONS, POINTS_PER_CURRENCY_UNIT } from '@/lib/constants';
+import { POINTS_PER_CURRENCY_UNIT } from '@/lib/constants';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInMinutes } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// --- Data Fetching Functions ---
+const fetchCustomers = async (): Promise<Customer[]> => {
+  const supabase = createClient();
+  const { data, error } = await supabase.from('customers').select('*').order('full_name');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchStations = async (): Promise<Station[]> => {
+  const supabase = createClient();
+  // In a real app, you might join with sessions to get the status.
+  // For now, we assume a 'status' column exists on the stations table.
+  const { data, error } = await supabase.from('stations').select('*').order('name');
+  if (error) {
+    console.error("Error fetching stations, falling back to mock. DB Error:", error.message)
+    // Fallback or re-throw as needed. For now, let's allow it to fail to be visible.
+    throw new Error(`Could not fetch stations: ${error.message}. Please ensure a 'stations' table exists with RLS policies.`);
+  }
+  return data;
+};
+
+const fetchActiveSessions = async (): Promise<Session[]> => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('sessions')
+      .select(`
+        *,
+        customer:customers(full_name),
+        station:stations(name)
+      `)
+      .eq('payment_status', 'pending');
+
+    if (error) throw new Error(error.message);
+    
+    // Process data to match the Session type with nested customer/station names
+    return data.map(s => ({
+        ...s,
+        id: s.id,
+        customer_id: s.customer_id,
+        station_id: s.station_id,
+        game_name: s.game_name || 'Unknown Game',
+        start_time: s.start_time,
+        session_type: s.session_type as 'per-hour' | 'per-game',
+        rate: s.rate || 0, // This should be handled better, maybe storing rate in sessions table
+        payment_status: s.payment_status as 'pending' | 'paid' | 'cancelled',
+        created_at: s.created_at,
+        customerName: (s.customer as any)?.full_name || 'Unknown Customer',
+        stationName: (s.station as any)?.name || 'Unknown Station',
+    }));
+};
+
 
 export default function SessionsPage() {
-  const [activeSessions, setActiveSessions] = useState<Session[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [stations, setStations] = useState<Station[]>(MOCK_STATIONS);
-  
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
   const [isStartSessionDialogOpen, setIsStartSessionDialogOpen] = useState(false);
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   const [sessionForReceipt, setSessionForReceipt] = useState<Session | null>(null);
 
-  const { toast } = useToast();
-  const supabase = createClient();
+  // --- React Query Hooks ---
+  const { data: customers, isLoading: isLoadingCustomers } = useQuery<Customer[]>({
+    queryKey: ['customers'],
+    queryFn: fetchCustomers,
+  });
 
-  // Fetch initial data for customers and active sessions
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      // Fetch customers
-      const { data: customerData, error: customerError } = await supabase.from('customers').select('*');
-      if (customerError) {
-        toast({ title: "Error fetching customers", description: customerError.message, variant: "destructive" });
-      } else {
-        setCustomers(customerData || []);
-      }
-
-      // Fetch active sessions
-      const { data: sessionData, error: sessionError } = await supabase.from('sessions').select('*').eq('payment_status', 'pending');
-      if (sessionError) {
-         toast({ title: "Error fetching active sessions", description: sessionError.message, variant: "destructive" });
-      } else {
-        const fetchedSessions: Session[] = (sessionData || []).map(s => ({
-            ...s,
-            id: s.id,
-            customer_id: s.customer_id,
-            station_id: s.station_id,
-            game_name: s.game_name || 'Unknown Game',
-            start_time: s.start_time,
-            session_type: s.session_type,
-            rate: s.amount_charged || 0, // Assuming rate might be stored in amount_charged for fixed sessions initially
-            payment_status: s.payment_status,
-            created_at: s.created_at,
-            customerName: customers.find(c => c.id === s.customer_id)?.full_name || 'Unknown Customer',
-            stationName: stations.find(st => st.id === s.station_id)?.name || 'Unknown Station'
-        }));
-        setActiveSessions(fetchedSessions);
-        // Sync station statuses
-        setStations(prevStations => prevStations.map(st => {
-            const activeSession = fetchedSessions.find(s => s.station_id === st.id);
-            return activeSession ? { ...st, status: 'in-use', currentSessionId: activeSession.id } : { ...st, status: 'available', currentSessionId: undefined };
-        }));
-      }
-    };
-    
-    fetchInitialData();
-  }, [supabase, toast]);
+  const { data: stations, isLoading: isLoadingStations } = useQuery<Station[]>({
+    queryKey: ['stations'],
+    queryFn: fetchStations,
+  });
+  
+  const { data: activeSessions, isLoading: isLoadingSessions, refetch: refetchActiveSessions } = useQuery<Session[]>({
+      queryKey: ['activeSessions'],
+      queryFn: fetchActiveSessions,
+      refetchInterval: 30000, // Poll for new sessions every 30 seconds
+  });
+  
+  const availableStations = stations?.filter(s => s.status === 'available') || [];
 
 
-  const handleStartSession = async (formData: SessionFormData) => {
-    const customer = customers.find(c => c.id === formData.customerId);
-    const station = stations.find(s => s.id === formData.stationId);
-
-    if (!customer || !station) {
-      toast({ title: "Error", description: "Selected customer or station not found.", variant: "destructive" });
-      return;
+  // --- Mutations ---
+  const startSessionMutation = useMutation({
+    mutationFn: async (payload: Omit<Session, 'id' | 'created_at' | 'customerName' | 'stationName'>) => {
+      const supabase = createClient();
+      const { data, error } = await supabase.from('sessions').insert([payload]).select().single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: async (data, variables) => {
+        // Also update the station's status to 'in-use'
+        await createClient().from('stations').update({ status: 'in-use' }).eq('id', variables.station_id);
+        
+        queryClient.invalidateQueries({ queryKey: ['activeSessions'] });
+        queryClient.invalidateQueries({ queryKey: ['stations'] });
+        setIsStartSessionDialogOpen(false);
+        toast({ title: "Session Started", description: `A new session has started successfully.` });
+    },
+    onError: (err: Error) => {
+        toast({ title: "Failed to Start Session", description: err.message, variant: "destructive" });
     }
-    if (station.status !== 'available') {
-        toast({ title: "Station Unavailable", description: `${station.name} is currently ${station.status}.`, variant: "destructive" });
-        return;
+  });
+
+  const endSessionMutation = useMutation({
+    mutationFn: async (paidSession: Session) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('sessions')
+        .update({
+          end_time: paidSession.end_time,
+          duration_minutes: paidSession.duration_minutes,
+          amount_charged: paidSession.amount_charged,
+          points_earned: paidSession.points_earned,
+          payment_status: 'paid',
+          payment_method: paidSession.payment_method,
+          mpesa_reference: paidSession.mpesa_reference,
+        })
+        .eq('id', paidSession.id);
+      if (error) throw new Error(`Could not update session: ${error.message}`);
+      return paidSession;
+    },
+    onSuccess: async (paidSession) => {
+      // Free up the station
+      await createClient().from('stations').update({ status: 'available' }).eq('id', paidSession.station_id);
+
+      // Award loyalty points
+      if (paidSession.points_earned && paidSession.points_earned > 0) {
+        const { error: loyaltyError } = await createClient().rpc('increment_loyalty_points', {
+            customer_id_param: paidSession.customer_id,
+            points_to_add: paidSession.points_earned
+        });
+        if (loyaltyError) {
+            toast({ title: "Loyalty Points Warning", description: `Could not update points: ${loyaltyError.message}`, variant: "destructive" });
+        }
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['activeSessions'] });
+      queryClient.invalidateQueries({ queryKey: ['stations'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      
+      setSessionToEnd(null);
+      setSessionForReceipt(paidSession);
+      toast({ title: "Payment Successful", description: `Payment for ${paidSession.customerName}'s session processed.` });
+    },
+    onError: (err: Error) => {
+        toast({ title: "Payment Failed", description: err.message, variant: "destructive" });
     }
-    
+  });
+
+
+  // --- Event Handlers ---
+  const handleStartSession = (formData: SessionFormData) => {
     const newSessionPayload = {
       customer_id: formData.customerId,
       station_id: formData.stationId,
       game_name: formData.gameName,
       session_type: formData.sessionType,
       start_time: new Date().toISOString(),
-      // 'rate' is not a DB column, so we don't send it. amount_charged is set at the end.
+      rate: formData.rate,
+      payment_status: 'pending' as const,
     };
-
-    const { data: insertedSession, error } = await supabase.from('sessions').insert(newSessionPayload).select().single();
-
-    if (error) {
-        toast({ title: "Failed to Start Session", description: error.message, variant: "destructive" });
-        return;
-    }
-
-    const newSession: Session = {
-      ...insertedSession,
-      id: insertedSession.id,
-      customerName: customer.full_name,
-      stationName: station.name,
-      rate: formData.rate, // Keep rate on client-side for calculation
-      game_name: insertedSession.game_name,
-      session_type: insertedSession.session_type,
-      start_time: insertedSession.start_time,
-      payment_status: 'pending',
-      created_at: insertedSession.created_at,
-      customer_id: insertedSession.customer_id
-    };
-
-    setActiveSessions(prev => [...prev, newSession]);
-    setStations(prev => prev.map(s => s.id === formData.stationId ? { ...s, status: 'in-use', currentSessionId: newSession.id } : s));
-    setIsStartSessionDialogOpen(false);
-    toast({ title: "Session Started", description: `Session for ${customer.full_name} on ${station.name} has started.` });
+    startSessionMutation.mutate(newSessionPayload);
   };
 
   const handleOpenEndSessionDialog = (session: Session) => {
@@ -124,11 +186,10 @@ export default function SessionsPage() {
     
     let amount_charged = 0;
     if (session.session_type === 'per-hour') {
-      // Bill per hour, minimum of 1 hour.
       const hours = Math.max(1, Math.ceil(durationMinutes / 60));
       amount_charged = hours * session.rate;
-    } else { // 'per-game'
-      amount_charged = session.rate; // Fixed rate
+    } else {
+      amount_charged = session.rate;
     }
 
     const points_earned = Math.floor(amount_charged * POINTS_PER_CURRENCY_UNIT);
@@ -142,72 +203,45 @@ export default function SessionsPage() {
     });
   };
 
-  const handleProcessPayment = useCallback(async (paidSession: Session) => {
-    if (!paidSession.end_time || paidSession.amount_charged == null) {
-      toast({title: "Error", description: "Cannot process payment without end time and amount.", variant: "destructive"});
-      return;
-    }
-
-    const { error } = await supabase
-      .from('sessions')
-      .update({
-        end_time: paidSession.end_time,
-        duration_minutes: paidSession.duration_minutes,
-        amount_charged: paidSession.amount_charged,
-        points_earned: paidSession.points_earned,
-        payment_status: 'paid',
-        payment_method: paidSession.payment_method,
-        mpesa_reference: paidSession.mpesa_reference,
-      })
-      .eq('id', paidSession.id);
-
-    if (error) {
-        toast({ title: "Payment Failed", description: `Could not update session: ${error.message}`, variant: "destructive" });
-        return;
-    }
-
-    // Also update customer's loyalty points
-    const { error: loyaltyError } = await supabase.rpc('increment_loyalty_points', {
-      customer_id_param: paidSession.customer_id,
-      points_to_add: paidSession.points_earned || 0
-    });
-
-     if (loyaltyError) {
-        // Log the error but don't block the user flow, as the main payment succeeded.
-        toast({ title: "Loyalty Points Warning", description: `Could not update points: ${loyaltyError.message}`, variant: "destructive" });
-    }
-
-
-    setActiveSessions(prev => prev.filter(s => s.id !== paidSession.id));
-    setStations(prev => prev.map(s => s.id === paidSession.station_id ? { ...s, status: 'available', currentSessionId: undefined } : s));
-    setCustomers(prev => prev.map(cust => 
-      cust.id === paidSession.customer_id 
-      ? { ...cust, loyalty_points: (cust.loyalty_points || 0) + (paidSession.points_earned || 0) } 
-      : cust
-    ));
-    
-    setSessionToEnd(null);
-    setSessionForReceipt(paidSession); // Show receipt after payment
-    toast({ title: "Payment Successful", description: `Payment for ${paidSession.customerName}'s session processed.` });
-  }, [supabase, toast]);
-
+  const handleProcessPayment = (paidSession: Session) => {
+    endSessionMutation.mutate(paidSession);
+  };
+  
+  const isLoading = isLoadingCustomers || isLoadingStations || isLoadingSessions;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-headline font-semibold">Active Game Sessions</h2>
-        <Button onClick={() => setIsStartSessionDialogOpen(true)} disabled={stations.filter(c => c.status === 'available').length === 0}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Start New Session
+        <Button onClick={() => setIsStartSessionDialogOpen(true)} disabled={availableStations.length === 0 || isLoadingCustomers}>
+          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+          Start New Session
         </Button>
       </div>
 
-      {activeSessions.length > 0 ? (
+      {isLoading && (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({length: 4}).map((_, i) => (
+                <Card key={i} className="flex flex-col">
+                    <CardHeader><Skeleton className="h-5 w-3/4" /></CardHeader>
+                    <CardContent className="space-y-3">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-5/6" />
+                    </CardContent>
+                    <CardFooter><Skeleton className="h-10 w-full" /></CardFooter>
+                </Card>
+            ))}
+        </div>
+      )}
+
+      {!isLoading && activeSessions && activeSessions.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {activeSessions.map(session => (
             <ActiveSessionCard key={session.id} session={session} onEndSession={handleOpenEndSessionDialog} />
           ))}
         </div>
-      ) : (
+      ) : !isLoading && (
         <div className="flex flex-col items-center justify-center text-center py-16 px-4 rounded-lg bg-secondary/50 border-2 border-dashed border-border">
           <Gamepad2 className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <p className="text-muted-foreground text-lg font-semibold">No Active Game Sessions</p>
@@ -219,8 +253,9 @@ export default function SessionsPage() {
         isOpen={isStartSessionDialogOpen}
         onClose={() => setIsStartSessionDialogOpen(false)}
         onSubmit={handleStartSession}
-        customers={customers}
-        stations={stations.filter(s => s.status === 'available')}
+        customers={customers || []}
+        stations={availableStations}
+        isSubmitting={startSessionMutation.isPending}
       />
 
       {sessionToEnd && (
@@ -229,6 +264,7 @@ export default function SessionsPage() {
           onClose={() => setSessionToEnd(null)}
           session={sessionToEnd}
           onProcessPayment={handleProcessPayment}
+          isProcessing={endSessionMutation.isPending}
         />
       )}
 

@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
+import { Loader2 } from 'lucide-react';
 
 const sessionFormSchema = z.object({
   customerId: z.string().min(1, "Customer is required."),
@@ -50,15 +51,16 @@ interface StartSessionDialogProps {
   onSubmit: (data: SessionFormData) => void;
   customers: Customer[];
   stations: Station[];
+  isSubmitting: boolean;
 }
 
-export default function StartSessionDialog({ isOpen, onClose, onSubmit, customers, stations }: StartSessionDialogProps) {
+export default function StartSessionDialog({ isOpen, onClose, onSubmit, customers, stations, isSubmitting }: StartSessionDialogProps) {
   const form = useForm<SessionFormData>({
     resolver: zodResolver(sessionFormSchema),
     defaultValues: {
       customerId: "",
       stationId: "",
-      gameName: "",
+      gameName: "FIFA 24", // A sensible default
       sessionType: "per-hour",
       rate: 200,
     },
@@ -69,7 +71,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
       form.reset({
         customerId: "",
         stationId: "",
-        gameName: "",
+        gameName: "FIFA 24",
         sessionType: "per-hour",
         rate: 200, 
       });
@@ -82,7 +84,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open && !isSubmitting) onClose();
     }}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
@@ -97,7 +99,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Customer</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a customer" />
@@ -119,7 +121,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Game Station</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a station" />
@@ -128,7 +130,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                     <SelectContent>
                       {stations.length > 0 ? stations.map(station => (
                         <SelectItem key={station.id} value={station.id} disabled={station.status !== 'available'}>
-                          {station.name} <span className={cn("text-xs ml-2", station.status === 'available' ? 'text-green-500' : 'text-red-500')}>({station.status})</span>
+                          {station.name} <span className={cn("text-xs ml-2 capitalize", station.status === 'available' ? 'text-green-500' : 'text-red-500')}>({station.status.replace('-', ' ')})</span>
                         </SelectItem>
                       )) : <SelectItem value="no-stations" disabled>No stations available</SelectItem>}
                     </SelectContent>
@@ -144,7 +146,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                 <FormItem>
                   <FormLabel>Game Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. FIFA 2024, Apex Legends" {...field} />
+                    <Input placeholder="e.g. FIFA 2024, Apex Legends" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -157,7 +159,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Billing Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select billing type" />
@@ -179,7 +181,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                   <FormItem>
                     <FormLabel>Rate ({CURRENCY_SYMBOL})</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g. 200" {...field} step="10" />
+                      <Input type="number" placeholder="e.g. 200" {...field} step="10" disabled={isSubmitting} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -187,8 +189,11 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
               />
             </div>
             <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit">Start Session</Button>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Start Session
+              </Button>
             </DialogFooter>
           </form>
         </Form>

@@ -4,7 +4,7 @@
 import type { Session } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Play, Clock } from 'lucide-react';
+import { User, Play, Clock, Loader2 } from 'lucide-react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import React, { useState, useEffect } from 'react';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
@@ -13,16 +13,21 @@ import { CURRENCY_SYMBOL } from '@/lib/constants';
 interface ActiveSessionCardProps {
   session: Session;
   onEndSession: (session: Session) => void;
+  isEnding?: boolean; // To show loading state
 }
 
-export default function ActiveSessionCard({ session, onEndSession }: ActiveSessionCardProps) {
-  const [elapsedTime, setElapsedTime] = useState(formatDistanceToNowStrict(new Date(session.start_time), { addSuffix: false }));
+export default function ActiveSessionCard({ session, onEndSession, isEnding }: ActiveSessionCardProps) {
+  const [elapsedTime, setElapsedTime] = useState('');
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    // Ensure start_time is valid before processing
+    if (session.start_time) {
       setElapsedTime(formatDistanceToNowStrict(new Date(session.start_time), { addSuffix: false }));
-    }, 1000 * 30); // Update every 30 seconds
-    return () => clearInterval(timer);
+      const timer = setInterval(() => {
+        setElapsedTime(formatDistanceToNowStrict(new Date(session.start_time), { addSuffix: false }));
+      }, 1000 * 30); // Update every 30 seconds
+      return () => clearInterval(timer);
+    }
   }, [session.start_time]);
   
   return (
@@ -50,7 +55,8 @@ export default function ActiveSessionCard({ session, onEndSession }: ActiveSessi
         </div>
       </CardContent>
       <CardFooter className="pt-3">
-        <Button onClick={() => onEndSession(session)} className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+        <Button onClick={() => onEndSession(session)} className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground" disabled={isEnding}>
+          {isEnding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           End Session & Bill
         </Button>
       </CardFooter>

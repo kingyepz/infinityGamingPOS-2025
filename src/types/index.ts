@@ -18,27 +18,29 @@ export interface Station {
   currentSessionId?: string;
 }
 
+// This interface now more closely matches the 'sessions' table schema.
+// UI-specific or calculated fields are kept separate or clearly marked.
 export interface Session {
-  // Fields that map directly to the 'sessions' table in Supabase
-  id: string;
-  customer_id: string;
-  station_id: string;
-  game_name: string; // User's table has game_id, but we'll use game_name for simplicity until games table is defined
-  start_time: string;
-  end_time?: string | null;
-  duration_minutes?: number | null;
-  session_type: 'per-hour' | 'per-game';
-  amount_charged?: number | null;
-  payment_status: 'pending' | 'paid' | 'cancelled';
-  points_earned?: number | null;
-  created_at: string;
+  id: string; // uuid
+  customer_id: string; // uuid
+  station_id: string; // uuid
+  game_name: string; // text - used instead of game_id for now
+  start_time: string; // timestamptz
+  end_time?: string | null; // timestamptz
+  duration_minutes?: number | null; // integer
+  session_type: 'per-hour' | 'per-game'; // text
+  amount_charged?: number | null; // numeric
+  payment_status: 'pending' | 'paid' | 'cancelled'; // text
+  points_earned?: number | null; // integer
+  created_at: string; // timestamptz
+  notes?: string | null; // text
   
   // Client-side fields for UI display, state management, and calculations
-  customerName?: string;
-  stationName?: string;
-  rate: number; // For calculation, not stored in DB
-  payment_method?: 'cash' | 'mpesa' | null;
-  mpesa_reference?: string | null;
+  customerName: string; // Fetched via join or lookup
+  stationName: string; // Fetched via join or lookup
+  rate: number; // For calculation, not stored directly in DB
+  payment_method?: 'cash' | 'mpesa' | null; // Assumed to exist in DB
+  mpesa_reference?: string | null; // Assumed to exist in DB
 }
 
 

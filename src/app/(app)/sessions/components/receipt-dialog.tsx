@@ -89,6 +89,8 @@ export default function ReceiptDialog({ isOpen, onClose, session }: ReceiptDialo
     </div>
   );
 
+  if (!session) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-sm">
