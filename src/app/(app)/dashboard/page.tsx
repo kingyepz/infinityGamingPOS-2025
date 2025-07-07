@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { DollarSign, Gamepad2, Users, Timer, ShieldX, Wallet, Star } from 'lucide-react';
+import { DollarSign, Gamepad2, Users, Timer, ShieldX, Wallet, Star, UserPlus } from 'lucide-react';
 import { StatCard } from '@/components/ui/stat-card';
 import { WelcomeHeader } from './components/WelcomeHeader';
 import { QuickActions } from './components/QuickActions';
@@ -17,7 +17,7 @@ import { StaffPerformance } from './components/StaffPerformance';
 import { createClient } from '@/lib/supabase/client';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 
-// Function to fetch all dashboard stats from Supabase
+// Function to fetch all dashboard stats from Supabase concurrently
 const fetchDashboardStats = async () => {
   const supabase = createClient();
   const todayStart = new Date();
@@ -26,47 +26,25 @@ const fetchDashboardStats = async () => {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  // 1. Active Sessions Count
-  const { count: activeSessionsCount, error: activeSessionsError } = await supabase
-    .from('game_sessions')
-    .select('*', { count: 'exact', head: true })
-    .eq('payment_status', 'pending');
+  const [
+    { count: activeSessionsCount, error: activeSessionsError },
+    { data: paidSessions, error: revenueError },
+    { count: newCustomersCount, error: newCustomersError },
+    { data: cancelledSessions, error: refundsError },
+    { data: loyaltyData, error: loyaltyError },
+    { count: totalCustomersCount, error: totalCustomersError },
+  ] = await Promise.all([
+    supabase.from('game_sessions').select('*', { count: 'exact', head: true }).eq('payment_status', 'pending'),
+    supabase.from('game_sessions').select('total_amount, duration_minutes').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
+    supabase.from('customers').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()).lte('created_at', todayEnd.toISOString()),
+    supabase.from('game_sessions').select('total_amount').eq('payment_status', 'cancelled').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
+    supabase.from('game_sessions').select('points_awarded').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
+    supabase.from('customers').select('*', { count: 'exact', head: true }),
+  ]);
 
-  // 2. Today's Revenue & Transactions
-  const { data: paidSessions, error: revenueError } = await supabase
-    .from('game_sessions')
-    .select('total_amount, duration_minutes')
-    .eq('payment_status', 'paid')
-    .gte('end_time', todayStart.toISOString())
-    .lte('end_time', todayEnd.toISOString());
-
-  // 3. New Customers Count
-  const { count: newCustomersCount, error: newCustomersError } = await supabase
-    .from('customers')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', todayStart.toISOString())
-    .lte('created_at', todayEnd.toISOString());
-
-  // 4. Refunds & Voids
-  const { data: cancelledSessions, error: refundsError } = await supabase
-    .from('game_sessions')
-    .select('total_amount', { count: 'exact' })
-    .eq('payment_status', 'cancelled')
-    .gte('end_time', todayStart.toISOString())
-    .lte('end_time', todayEnd.toISOString());
-
-  // 5. Loyalty Points
-  const { data: loyaltyData, error: loyaltyError } = await supabase
-    .from('game_sessions')
-    .select('points_awarded')
-    .eq('payment_status', 'paid')
-    .gte('end_time', todayStart.toISOString())
-    .lte('end_time', todayEnd.toISOString());
-
-
-  // Error handling
-  if (activeSessionsError || revenueError || newCustomersError || refundsError || loyaltyError) {
-    console.error({ activeSessionsError, revenueError, newCustomersError, refundsError, loyaltyError });
+  // Centralized Error Handling
+  if (activeSessionsError || revenueError || newCustomersError || refundsError || loyaltyError || totalCustomersError) {
+    console.error({ activeSessionsError, revenueError, newCustomersError, refundsError, loyaltyError, totalCustomersError });
     throw new Error('Failed to fetch one or more dashboard statistics.');
   }
 
@@ -83,6 +61,7 @@ const fetchDashboardStats = async () => {
     activeSessionsCount: activeSessionsCount ?? 0,
     todaysRevenue,
     newCustomersCount: newCustomersCount ?? 0,
+    totalCustomersCount: totalCustomersCount ?? 0,
     avgTransactionValue,
     refundsTodayValue,
     refundsTodayCount: cancelledSessions?.length || 0,
@@ -128,10 +107,18 @@ export default function DashboardPage() {
           description={<span className="text-green-500">Updated in real-time</span>}
           isLoading={isLoading}
         />
+         <StatCard
+          title="Total Customers"
+          value={stats?.totalCustomersCount.toLocaleString() ?? '0'}
+          icon={Users}
+          description="Total registered customers"
+          linkTo='/customers'
+          isLoading={isLoading}
+        />
         <StatCard
           title="New Customers Today"
           value={`+${stats?.newCustomersCount ?? '0'}`}
-          icon={Users}
+          icon={UserPlus}
           description="Welcome our new gamers!"
           linkTo='/customers'
           isLoading={isLoading}
