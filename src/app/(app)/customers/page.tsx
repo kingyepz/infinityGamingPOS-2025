@@ -24,7 +24,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Explicitly define payloads for clarity and robustness
-type AddCustomerPayload = Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'join_date' | 'loyalty_tier'>;
+type AddCustomerPayload = Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'join_date' | 'loyalty_tier' | 'loyalty_points'>;
 type UpdateCustomerPayload = Pick<Customer, 'id' | 'full_name' | 'phone_number' | 'email' | 'loyalty_points' | 'loyalty_tier'>;
 
 // Define functions to interact with Supabase
@@ -37,9 +37,34 @@ const fetchCustomers = async (): Promise<Customer[]> => {
 
 const addCustomer = async (customer: AddCustomerPayload) => {
   const supabase = createClient();
-  const { data, error } = await supabase.from('customers').insert([customer]).select().single();
-  if (error) throw new Error(error.message);
-  return data;
+  // Step 1: Insert the customer without any points. The default is 0.
+  const { data: newCustomer, error: customerError } = await supabase
+    .from('customers')
+    .insert([customer])
+    .select()
+    .single();
+
+  if (customerError) throw new Error(customerError.message);
+  if (!newCustomer) throw new Error("Failed to create customer record.");
+
+  // Step 2: Insert the bonus transaction. The DB trigger will update the customer's points.
+  const { error: transactionError } = await supabase
+    .from('loyalty_transactions')
+    .insert([{ 
+        customer_id: newCustomer.id, 
+        transaction_type: 'bonus', 
+        points: 50, 
+        description: 'Sign-up bonus' 
+    }]);
+    
+  if (transactionError) {
+    // Non-critical error: The customer was created, but points failed.
+    // We can still return the customer but should log this and perhaps notify the user.
+    console.error("Failed to add bonus points transaction:", transactionError.message);
+    // This could be a good place for a specific toast message.
+  }
+  
+  return newCustomer;
 };
 
 const updateCustomer = async (customer: UpdateCustomerPayload) => {
@@ -73,6 +98,7 @@ export default function CustomersPage() {
     mutationFn: addCustomer,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-loyalty'] }); // Invalidate loyalty page data
       toast({ title: "Customer Added", description: "The new customer has been registered successfully and awarded 50 bonus points." });
       setIsFormOpen(false);
     },
@@ -85,6 +111,7 @@ export default function CustomersPage() {
     mutationFn: updateCustomer,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-loyalty'] });
       toast({ title: "Customer Updated", description: "The customer's details have been updated." });
       setIsFormOpen(false);
       setSelectedCustomer(null);
@@ -98,6 +125,7 @@ export default function CustomersPage() {
     mutationFn: deleteCustomer,
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['customers'] });
+        queryClient.invalidateQueries({ queryKey: ['customers-loyalty'] });
         toast({ title: "Customer Deleted", description: `${customerToDelete?.full_name} has been removed.` });
         setCustomerToDelete(null);
     },
@@ -139,12 +167,11 @@ export default function CustomersPage() {
         loyalty_tier: formData.loyalty_tier ?? selectedCustomer.loyalty_tier,
       });
     } else {
-      // For new customers, we send the essential fields plus the 50 point bonus.
+      // The addMutation now handles the bonus points transaction internally.
       addMutation.mutate({
         full_name: formData.full_name,
         phone_number: formData.phone_number,
         email: formData.email,
-        loyalty_points: 50,
       });
     }
   };

@@ -84,3 +84,13 @@ export interface Staff {
     revenueToday: number;
     sessions: number;
 }
+
+export interface LoyaltyTransaction {
+  id: string; // uuid
+  customer_id: string; // uuid
+  session_id?: string | null; // uuid
+  transaction_type: 'earn' | 'redeem' | 'bonus';
+  points: number;
+  description?: string | null;
+  created_at: string;
+}

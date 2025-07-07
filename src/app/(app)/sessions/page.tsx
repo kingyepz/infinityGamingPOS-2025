@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Session, Customer, Station, Game } from '@/types';
+import type { Session, Customer, Station, Game, LoyaltyTransaction } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Gamepad2, Loader2 } from 'lucide-react';
 import StartSessionDialog, { type SessionFormData } from './components/start-session-dialog';
@@ -157,26 +157,27 @@ export default function SessionsPage() {
 
       const totalPoints = paidSession.points_earned || 0;
       if (totalPoints > 0) {
-        const pointUpdates = [];
+        const transactions_to_add: Omit<LoyaltyTransaction, 'id' | 'created_at'>[] = [];
+        const sessionDescription = `Points from session on ${paidSession.stationName}`;
+
         if (payer === 'primary' && paidSession.customer_id) {
-          pointUpdates.push({ customer_id_param: paidSession.customer_id, points_to_add: totalPoints });
+          transactions_to_add.push({ customer_id: paidSession.customer_id, points: totalPoints, transaction_type: 'earn', description: sessionDescription, session_id: paidSession.id });
         } else if (payer === 'secondary' && paidSession.secondary_customer_id) {
-          pointUpdates.push({ customer_id_param: paidSession.secondary_customer_id, points_to_add: totalPoints });
+          transactions_to_add.push({ customer_id: paidSession.secondary_customer_id, points: totalPoints, transaction_type: 'earn', description: sessionDescription, session_id: paidSession.id });
         } else if (payer === 'split') {
           const splitPoints = Math.floor(totalPoints / 2);
           if (paidSession.customer_id) {
-            pointUpdates.push({ customer_id_param: paidSession.customer_id, points_to_add: splitPoints });
+            transactions_to_add.push({ customer_id: paidSession.customer_id, points: splitPoints, transaction_type: 'earn', description: sessionDescription, session_id: paidSession.id });
           }
           if (paidSession.secondary_customer_id) {
-            // Give remaining points to second player in case of odd total
-            pointUpdates.push({ customer_id_param: paidSession.secondary_customer_id, points_to_add: totalPoints - splitPoints });
+            transactions_to_add.push({ customer_id: paidSession.secondary_customer_id, points: totalPoints - splitPoints, transaction_type: 'earn', description: sessionDescription, session_id: paidSession.id });
           }
         }
         
-        for (const update of pointUpdates) {
-          const { error: loyaltyError } = await supabase.rpc('increment_loyalty_points', update);
+        if (transactions_to_add.length > 0) {
+          const { error: loyaltyError } = await supabase.from('loyalty_transactions').insert(transactions_to_add);
           if (loyaltyError) {
-              toast({ title: "Loyalty Points Warning", description: `Could not update points for a customer: ${loyaltyError.message}`, variant: "destructive" });
+              toast({ title: "Loyalty Points Warning", description: `Could not record points transaction: ${loyaltyError.message}`, variant: "destructive" });
           }
         }
       }
@@ -185,6 +186,7 @@ export default function SessionsPage() {
       queryClient.invalidateQueries({ queryKey: ['stations'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-loyalty'] });
       
       setSessionToEnd(null);
       setSessionForReceipt(paidSession);
