@@ -31,16 +31,26 @@ const fetchGames = async (): Promise<Game[]> => {
   return data;
 };
 
-const addGame = async (game: Omit<Game, 'id' | 'created_at'>) => {
+const addGame = async (formData: GameFormData) => {
   const supabase = createClient();
-  const { data, error } = await supabase.from('games').insert([game]).select().single();
+  const payload = {
+    ...formData,
+    cover_image_url: formData.cover_image_url || null,
+    release_date: formData.release_date ? formData.release_date.toISOString().split('T')[0] : null,
+  };
+  const { data, error } = await supabase.from('games').insert([payload]).select().single();
   if (error) throw new Error(error.message);
   return data;
 };
 
-const updateGame = async (game: Pick<Game, 'id' | 'name' | 'genre'>) => {
+const updateGame = async (payload: {id: string} & GameFormData) => {
   const supabase = createClient();
-  const { id, ...updateData } = game;
+  const { id, ...formData } = payload;
+  const updateData = {
+      ...formData,
+      cover_image_url: formData.cover_image_url || null,
+      release_date: formData.release_date ? formData.release_date.toISOString().split('T')[0] : null,
+  }
   const { data, error } = await supabase.from('games').update(updateData).eq('id', id).select().single();
   if (error) throw new Error(error.message);
   return data;
@@ -136,6 +146,20 @@ export default function GamesPage() {
   };
 
   const isMutating = addMutation.isPending || updateMutation.isPending;
+  
+  const getFormDefaultValues = () => {
+    if (!selectedGame) return undefined;
+    
+    return {
+      name: selectedGame.name,
+      genre: selectedGame.genre ?? '',
+      description: selectedGame.description ?? '',
+      cover_image_url: selectedGame.cover_image_url ?? '',
+      release_date: selectedGame.release_date ? new Date(selectedGame.release_date) : undefined,
+      developer: selectedGame.developer ?? '',
+      publisher: selectedGame.publisher ?? '',
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -151,16 +175,13 @@ export default function GamesPage() {
               <PlusCircle className="mr-2 h-4 w-4" /> Add Game
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>{selectedGame ? 'Edit Game' : 'Add New Game'}</DialogTitle>
             </DialogHeader>
             <GameForm 
               onSubmit={handleFormSubmit} 
-              defaultValues={selectedGame ? { 
-                  name: selectedGame.name, 
-                  genre: selectedGame.genre,
-              } : undefined} 
+              defaultValues={getFormDefaultValues()} 
               onCancel={() => {
                 setIsFormOpen(false);
                 setSelectedGame(null);
@@ -174,8 +195,10 @@ export default function GamesPage() {
       {isLoading && (
          <div className="rounded-lg border shadow-sm bg-card p-4 space-y-3">
              <div className="flex justify-between">
-                <Skeleton className="h-5 w-1/3" />
                 <Skeleton className="h-5 w-1/4" />
+                <Skeleton className="h-5 w-1/6" />
+                <Skeleton className="h-5 w-1/6" />
+                <Skeleton className="h-5 w-1/6" />
                 <Skeleton className="h-5 w-1/6" />
                 <Skeleton className="h-5 w-1/6" />
              </div>

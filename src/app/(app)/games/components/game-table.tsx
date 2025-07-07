@@ -25,7 +25,9 @@ export default function GameTable({ games, onEdit, onDelete }: GameTableProps) {
           <TableRow>
             <TableHead className="whitespace-nowrap">Name</TableHead>
             <TableHead className="whitespace-nowrap">Genre</TableHead>
-            <TableHead className="whitespace-nowrap">Date Added</TableHead>
+            <TableHead className="whitespace-nowrap">Developer</TableHead>
+            <TableHead className="whitespace-nowrap">Publisher</TableHead>
+            <TableHead className="whitespace-nowrap">Release Date</TableHead>
             <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -33,9 +35,11 @@ export default function GameTable({ games, onEdit, onDelete }: GameTableProps) {
           {games.map((game) => (
             <TableRow key={game.id}>
               <TableCell className="font-medium whitespace-nowrap">{game.name}</TableCell>
-              <TableCell className="whitespace-nowrap">{game.genre}</TableCell>
+              <TableCell className="whitespace-nowrap">{game.genre || 'N/A'}</TableCell>
+              <TableCell className="whitespace-nowrap">{game.developer || 'N/A'}</TableCell>
+              <TableCell className="whitespace-nowrap">{game.publisher || 'N/A'}</TableCell>
               <TableCell className="whitespace-nowrap">
-                {game.created_at ? format(new Date(game.created_at), 'PPP') : 'N/A'}
+                {game.release_date ? format(new Date(game.release_date), 'PPP') : 'N/A'}
               </TableCell>
               <TableCell className="text-right space-x-2 whitespace-nowrap">
                 <Button variant="outline" size="icon" onClick={() => onEdit(game)} aria-label={`Edit ${game.name}`}>
