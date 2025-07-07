@@ -26,45 +26,66 @@ const fetchDashboardStats = async () => {
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  const [
-    { count: activeSessionsCount, error: activeSessionsError },
-    { data: paidSessions, error: revenueError },
-    { count: newCustomersCount, error: newCustomersError },
-    { data: cancelledSessions, error: refundsError },
-    { data: loyaltyData, error: loyaltyError },
-    { count: totalCustomersCount, error: totalCustomersError },
-  ] = await Promise.all([
+  const promises = [
     supabase.from('game_sessions').select('*', { count: 'exact', head: true }).eq('payment_status', 'pending'),
     supabase.from('game_sessions').select('total_amount, duration_minutes').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
-    supabase.from('customers').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()).lte('created_at', todayEnd.toISOString()),
+    supabase.from('customers').select('*', { count: 'exact', head: true }).gte('join_date', todayStart.toISOString()).lte('join_date', todayEnd.toISOString()),
     supabase.from('game_sessions').select('total_amount').eq('payment_status', 'cancelled').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
     supabase.from('game_sessions').select('points_awarded').eq('payment_status', 'paid').gte('end_time', todayStart.toISOString()).lte('end_time', todayEnd.toISOString()),
     supabase.from('customers').select('*', { count: 'exact', head: true }),
-  ]);
+  ];
 
-  // Centralized Error Handling
-  if (activeSessionsError || revenueError || newCustomersError || refundsError || loyaltyError || totalCustomersError) {
-    console.error({ activeSessionsError, revenueError, newCustomersError, refundsError, loyaltyError, totalCustomersError });
-    throw new Error('Failed to fetch one or more dashboard statistics.');
+  const [
+    activeSessionsResult,
+    paidSessionsResult,
+    newCustomersResult,
+    cancelledSessionsResult,
+    loyaltyDataResult,
+    totalCustomersResult
+  ] = await Promise.all(promises);
+
+  // Centralized and more specific error handling
+  const results = {
+    activeSessions: activeSessionsResult,
+    paidSessions: paidSessionsResult,
+    newCustomers: newCustomersResult,
+    cancelledSessions: cancelledSessionsResult,
+    loyaltyData: loyaltyDataResult,
+    totalCustomers: totalCustomersResult,
+  };
+
+  for (const [key, result] of Object.entries(results)) {
+    if (result.error) {
+      console.error(`Error fetching ${key}:`, result.error);
+      throw new Error(`Database error fetching ${key}: ${result.error.message}. Please check table names and Row Level Security policies in Supabase.`);
+    }
   }
+  
+  // If we get here, all queries were successful. Safely access data.
+  const activeSessionsCount = activeSessionsResult.count ?? 0;
+  const paidSessions = paidSessionsResult.data || [];
+  const newCustomersCount = newCustomersResult.count ?? 0;
+  const cancelledSessions = cancelledSessionsResult.data || [];
+  const loyaltyData = loyaltyDataResult.data || [];
+  const totalCustomersCount = totalCustomersResult.count ?? 0;
 
   // Calculations
-  const todaysRevenue = paidSessions?.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0;
-  const transactionCount = paidSessions?.length || 0;
+  const todaysRevenue = paidSessions.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0;
+  const transactionCount = paidSessions.length || 0;
   const avgTransactionValue = transactionCount > 0 ? todaysRevenue / transactionCount : 0;
-  const refundsTodayValue = cancelledSessions?.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0;
-  const totalDuration = paidSessions?.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) || 0;
+  const refundsTodayValue = cancelledSessions.reduce((sum, s) => sum + (s.total_amount || 0), 0) || 0;
+  const totalDuration = paidSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) || 0;
   const avgSessionDurationMins = transactionCount > 0 ? totalDuration / transactionCount : 0;
-  const loyaltyPointsToday = loyaltyData?.reduce((sum, s) => sum + (s.points_awarded || 0), 0) || 0;
+  const loyaltyPointsToday = loyaltyData.reduce((sum, s) => sum + (s.points_awarded || 0), 0) || 0;
 
   return {
-    activeSessionsCount: activeSessionsCount ?? 0,
+    activeSessionsCount,
     todaysRevenue,
-    newCustomersCount: newCustomersCount ?? 0,
-    totalCustomersCount: totalCustomersCount ?? 0,
+    newCustomersCount,
+    totalCustomersCount,
     avgTransactionValue,
     refundsTodayValue,
-    refundsTodayCount: cancelledSessions?.length || 0,
+    refundsTodayCount: cancelledSessions.length || 0,
     avgSessionDuration: `${Math.floor(avgSessionDurationMins / 60)}h ${Math.round(avgSessionDurationMins % 60)}min`,
     loyaltyPointsToday,
   };
@@ -91,7 +112,7 @@ export default function DashboardPage() {
           </div>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
         <StatCard
           title="Active Sessions"
           value={stats?.activeSessionsCount.toString() ?? '0'}
@@ -155,17 +176,16 @@ export default function DashboardPage() {
 
       <QuickActions />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
            <RevenueTrendChart />
            <ConsoleUtilization />
            <HourlyActivityChart />
         </div>
-        <div className="lg:col-span-1 space-y-8">
-          <SessionTypeDistributionChart />
+        <div className="lg:col-span-1 space-y-6">
           <PaymentMethodChart />
-          {userRole === 'admin' && <StaffPerformance />}
           <RecentActivityTabs />
+          {userRole === 'admin' && <StaffPerformance />}
         </div>
       </div>
     </div>
