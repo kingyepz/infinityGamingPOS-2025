@@ -184,7 +184,7 @@ export default function DashboardPage() {
                 <PopularGamesChart />
             </div>
             <div className="space-y-6 lg:col-span-1">
-                <TopCustomers />
+                <TopCustomers loyaltyPointsToday={stats?.loyaltyPointsToday} isLoading={isLoading} />
                 <PaymentMethodChart />
                 <ConsoleUtilization />
             </div>
