@@ -51,7 +51,7 @@ export default function LoginPage() {
       setIsLoading(false);
       // Specific check for network errors
       if (signInError.message.toLowerCase().includes("failed to fetch")) {
-        const networkErrorMsg = "Network error: Could not connect to authentication service. Please check your internet connection and try again.";
+        const networkErrorMsg = "Network error: Could not connect to authentication service. Please check your internet connection and Supabase URL/keys.";
         setFormError(networkErrorMsg);
         toast({
           title: "Connection Error",
@@ -90,11 +90,19 @@ export default function LoginPage() {
           const specificError = "Your account is awaiting role assignment. Please contact an administrator.";
           
           if (userDbError) {
-            console.error(`DATABASE QUERY FAILED: Could not fetch role for user ${authData.user.id}.`, userDbError);
-            console.error("DEBUGGING HELP: This is likely due to a Row Level Security (RLS) policy on the 'public.users' table blocking the SELECT query. Ensure you have a policy that allows authenticated users to read their own record (e.g., USING (auth.uid() = id)).");
+            console.error("--- LOGIN ROLE CHECK FAILED ---");
+            console.error(`DATABASE QUERY FAILED for user ${authData.user.id}:`, userDbError.message);
+            console.error(">>> FIX: This is ALMOST ALWAYS a Row Level Security (RLS) issue.");
+            console.error(">>> Go to Supabase -> Database -> Policies -> 'users' table.");
+            console.error(">>> Ensure you have a policy like: CREATE POLICY \"Allow authenticated users to read their own user record\" ON public.users FOR SELECT TO authenticated USING (auth.uid() = id);");
+            console.error("-----------------------------");
           } else {
-            console.warn(`DATABASE QUERY SUCCEEDED BUT RETURNED NO DATA: No role found for user with ID '${authData.user.id}' in the 'public.users' table.`);
-            console.warn(`DEBUGGING HELP: Go to your Supabase Table Editor for the 'public.users' table and ensure a row exists with the 'id' column matching the User ID above. This row must also have a value in the 'role' column (e.g., 'admin').`);
+            console.warn("--- LOGIN ROLE CHECK FAILED ---");
+            console.warn(`DATABASE QUERY SUCCEEDED BUT RETURNED NO DATA for user ID: '${authData.user.id}'.`);
+            console.warn(">>> FIX: The user exists in Supabase Auth, but NOT in your 'public.users' table.");
+            console.warn(">>> Go to Supabase -> Table Editor -> 'users' table.");
+            console.warn(`>>> Manually INSERT a row with the 'id' column matching the User ID above, and set the 'role' column (e.g., to 'admin').`);
+            console.warn("-----------------------------");
           }
 
           setFormError(specificError);
