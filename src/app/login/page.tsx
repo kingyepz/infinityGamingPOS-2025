@@ -90,17 +90,21 @@ export default function LoginPage() {
           const specificError = "Your account is awaiting role assignment. Please contact an administrator.";
           
           if (userDbError) {
-            console.error(`Error fetching user role from database for user ${authData.user.id}:`, userDbError.message);
+            console.error(`DATABASE QUERY FAILED: Could not fetch role for user ${authData.user.id}.`, userDbError);
+            console.error("DEBUGGING HELP: This is likely due to a Row Level Security (RLS) policy on the 'public.users' table blocking the SELECT query. Ensure you have a policy that allows authenticated users to read their own record (e.g., USING (auth.uid() = id)).");
           } else {
-            console.warn(`User role query for ID '${authData.user.id}' in 'public.users' returned no data. Account is pending role assignment.`);
+            console.warn(`DATABASE QUERY SUCCEEDED BUT RETURNED NO DATA: No role found for user with ID '${authData.user.id}' in the 'public.users' table.`);
+            console.warn(`DEBUGGING HELP: Go to your Supabase Table Editor for the 'public.users' table and ensure a row exists with the 'id' column matching the User ID above. This row must also have a value in the 'role' column (e.g., 'admin').`);
           }
 
           setFormError(specificError);
           toast({
             title: "Role Assignment Pending",
-            description: specificError,
+            description: "Your account is valid, but role information is missing. Please contact an administrator.",
             variant: "destructive"
           });
+          // Sign out the user to prevent them from being in a broken state
+          await supabase.auth.signOut();
           return; 
         }
 
