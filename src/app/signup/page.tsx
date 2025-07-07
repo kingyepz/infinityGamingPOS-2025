@@ -38,6 +38,22 @@ export default function SignUpPage() {
     },
   });
 
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
+    if (error) {
+      setFormError(error.message);
+      toast({
+        title: "Google Sign-In Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      setIsLoading(false);
+    }
+  };
+
   const onSubmit = async (formData: SignUpFormValues) => {
     setIsLoading(true);
     setFormError(null);
@@ -106,6 +122,7 @@ export default function SignUpPage() {
               </Button>
             </div>
           ) : (
+            <>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {formError && (
@@ -159,11 +176,30 @@ export default function SignUpPage() {
                       Creating Account...
                     </>
                   ) : (
-                    "Sign Up"
+                    "Sign Up with Email"
                   )}
                 </Button>
               </form>
             </Form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or sign up with
+                </span>
+              </div>
+            </div>
+
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+              <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4">
+                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.9-4.55 1.9-3.47 0-6.3-2.89-6.3-6.4s2.83-6.4 6.3-6.4c1.93 0 3.26.77 4.27 1.74l2.54-2.54C18.14 2.1 15.47 1 12.48 1 7.02 1 3 5.02 3 10.5s4.02 9.5 9.48 9.5c2.76 0 5.1-1 6.87-2.85 1.9-1.9 2.54-4.55 2.54-6.87 0-.6-.05-1.18-.15-1.72H12.48z" fill="currentColor"/>
+              </svg>
+              Sign up with Google
+            </Button>
+            </>
           )}
         </CardContent>
         <CardFooter className="flex flex-col items-center space-y-3 pt-4">
