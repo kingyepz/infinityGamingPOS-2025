@@ -68,6 +68,7 @@ const kpiConfig: KpiConfigItem[] = [
     icon: Gift,
     description: 'Number of active, unclaimed birthday rewards.',
     format: (value: number) => value.toLocaleString(),
+    linkTo: '/customers',
   },
   {
     key: 'totalPointsOutstanding',
