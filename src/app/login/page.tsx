@@ -140,20 +140,9 @@ export default function LoginPage() {
           return; 
         }
 
-        let redirectPath = '/dashboard'; 
-        switch (userData.role) {
-          case 'admin':
-            redirectPath = '/dashboard/admin';
-            break;
-          case 'cashier': 
-          case 'supervisor':
-             redirectPath = '/dashboard/cashier';
-             break;
-          default:
-            console.warn(`User role '${userData.role}' does not have a specific dashboard redirection rule. Defaulting to /dashboard.`);
-            redirectPath = '/dashboard'; 
-            break;
-        }
+        // All users are redirected to the main dashboard.
+        // Role-based UI components will handle feature visibility.
+        const redirectPath = '/dashboard'; 
         
         toast({
           title: "Login Successful",

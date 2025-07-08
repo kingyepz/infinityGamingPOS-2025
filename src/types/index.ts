@@ -1,6 +1,6 @@
 
 
-import type { CONSOLE_PLATFORMS } from "./lib/constants";
+import type { CONSOLE_PLATFORMS } from "@/lib/constants";
 
 export interface Customer {
   id: string; // UUID from Supabase

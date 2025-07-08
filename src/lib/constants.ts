@@ -24,3 +24,10 @@ export const CONSOLE_PLATFORMS = [
     "Gaming PC",
     "VR Headset"
 ] as const;
+
+
+export const MOCK_STAFF_PERFORMANCE: Staff[] = [
+  { id: 'staff-1', name: 'Alice Johnson', initials: 'AJ', revenueToday: 1250, sessions: 5 },
+  { id: 'staff-2', name: 'Bob Williams', initials: 'BW', revenueToday: 980, sessions: 4 },
+  { id: 'staff-3', name: 'Charlie Brown', initials: 'CB', revenueToday: 760, sessions: 3 },
+];
