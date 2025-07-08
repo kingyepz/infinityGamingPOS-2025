@@ -188,32 +188,22 @@ export default function SessionsPage() {
         const { paidSession } = params;
         const supabase = createClient();
 
-        // Check for duplicate MPesa reference before processing payment
+        // NEW: Secure, server-side check for duplicate MPesa reference via RPC
         if (paidSession.payment_method === 'mpesa' && paidSession.mpesa_reference) {
-            const referencesToCheck = paidSession.mpesa_reference.split(',').map(ref => ref.trim()).filter(Boolean);
+            const referencesToCheck = paidSession.mpesa_reference.split(',').map(ref => ref.trim().toUpperCase()).filter(Boolean);
             
-            // This query finds any paid session that has at least one of the same reference codes.
-            const { data: existingSessions, error: checkError } = await supabase
-                .from('sessions')
-                .select('id, mpesa_reference')
-                .eq('payment_status', 'paid')
-                .not('mpesa_reference', 'is', null);
+            for (const ref of referencesToCheck) {
+                if (!ref) continue;
+                // Call the database function
+                const { data: exists, error: rpcError } = await supabase.rpc('check_mpesa_ref_exists', { ref_code: ref });
 
-            if (checkError) {
-                throw new Error(`Database error while checking reference: ${checkError.message}`);
-            }
+                if (rpcError) {
+                    // This could be because the function doesn't exist.
+                    throw new Error(`Database error checking reference: ${rpcError.message}. Ensure the 'check_mpesa_ref_exists' function is created.`);
+                }
 
-            if (existingSessions) {
-                const usedReferences = new Set<string>();
-                existingSessions.forEach(session => {
-                    session.mpesa_reference!.split(',').map(ref => ref.trim()).forEach(ref => usedReferences.add(ref));
-                });
-
-                for (const ref of referencesToCheck) {
-                    if (usedReferences.has(ref)) {
-                        // Throw an error if a duplicate is found
-                        throw new Error(`MPesa reference "${ref}" has already been used.`);
-                    }
+                if (exists === true) {
+                    throw new Error(`MPesa reference "${ref}" has already been used.`);
                 }
             }
         }
@@ -228,7 +218,8 @@ export default function SessionsPage() {
                 points_earned: paidSession.points_earned,
                 payment_status: 'paid',
                 payment_method: paidSession.payment_method,
-                mpesa_reference: paidSession.mpesa_reference,
+                // Normalize to uppercase and comma-space separated for consistency
+                mpesa_reference: paidSession.mpesa_reference ? paidSession.mpesa_reference.split(',').map(ref => ref.trim().toUpperCase()).filter(Boolean).join(', ') : undefined,
             })
             .eq('id', paidSession.id);
         if (error) throw new Error(`Could not update session: ${error.message}`);

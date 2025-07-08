@@ -227,7 +227,7 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
                   <FormItem>
                     <FormLabel>MPesa Reference Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. RKT123ABC45" {...field} value={field.value || ''} disabled={isProcessing} />
+                      <Input placeholder="e.g. RKT123ABC45 (case-insensitive)" {...field} value={field.value || ''} disabled={isProcessing} />
                     </FormControl>
                      {payer === 'split' && <p className="text-xs text-muted-foreground mt-1">Enter both reference codes separated by a comma if needed.</p>}
                     <FormMessage />
