@@ -62,7 +62,7 @@ export interface Session {
   points_earned?: number | null; // integer
   created_at: string; // timestamptz
   notes?: string | null; // text
-  payment_method?: 'cash' | 'mpesa' | null; // Assumed to exist in DB
+  payment_method?: 'cash' | 'mpesa' | 'mpesa-stk' | null; // Added 'mpesa-stk'
   mpesa_reference?: string | null; // Assumed to exist in DB
   recorded_by?: string | null; // uuid of user who processed payment
   offer_id?: string | null; // uuid of the offer used for this session
@@ -70,6 +70,7 @@ export interface Session {
   // Client-side fields for UI display, state management, and calculations
   customerName: string; // Fetched via join or lookup
   secondaryCustomerName?: string | null; // Fetched via join
+  customerPhoneNumber?: string | null; // Added for STK push
   stationName: string; // Fetched via join or lookup
   game_name?: string; // Fetched via join or lookup
   rate: number; // For calculation, not stored directly in DB

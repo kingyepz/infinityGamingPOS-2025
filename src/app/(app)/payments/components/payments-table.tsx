@@ -5,7 +5,7 @@ import type { Session } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, CreditCard, Wallet, Trash2 } from 'lucide-react';
+import { Eye, CreditCard, Wallet, Trash2, Smartphone } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 import {
@@ -22,11 +22,16 @@ interface PaymentsTableProps {
   onVoid: (session: Session) => void;
 }
 
-const PaymentMethodIcon = ({ method }: { method: 'cash' | 'mpesa' | null | undefined }) => {
-    if (method === 'mpesa') {
-        return <CreditCard className="h-4 w-4 text-green-500" />;
+const PaymentMethodIcon = ({ method }: { method: 'cash' | 'mpesa' | 'mpesa-stk' | null | undefined }) => {
+    switch(method) {
+        case 'mpesa':
+            return <CreditCard className="h-4 w-4 text-green-500" />;
+        case 'mpesa-stk':
+            return <Smartphone className="h-4 w-4 text-green-600" />;
+        case 'cash':
+        default:
+            return <Wallet className="h-4 w-4 text-blue-500" />;
     }
-    return <Wallet className="h-4 w-4 text-blue-500" />;
 }
 
 export default function PaymentsTable({ payments, onViewReceipt, userRole, onVoid }: PaymentsTableProps) {
@@ -68,10 +73,10 @@ export default function PaymentsTable({ payments, onViewReceipt, userRole, onVoi
                         <TooltipTrigger asChild>
                            <Badge variant="outline" className="flex items-center gap-2 capitalize">
                                 <PaymentMethodIcon method={payment.payment_method} />
-                                {payment.payment_method || 'N/A'}
+                                {payment.payment_method === 'mpesa-stk' ? 'M-Pesa Express' : payment.payment_method || 'N/A'}
                            </Badge>
                         </TooltipTrigger>
-                        {payment.payment_method === 'mpesa' && payment.mpesa_reference && (
+                        {(payment.payment_method === 'mpesa' || payment.payment_method === 'mpesa-stk') && payment.mpesa_reference && (
                             <TooltipContent>
                                <p>Ref: {payment.mpesa_reference}</p>
                             </TooltipContent>

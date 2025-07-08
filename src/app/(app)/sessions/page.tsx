@@ -80,7 +80,7 @@ const fetchActiveSessions = async (): Promise<Session[]> => {
       .from('sessions')
       .select(`
         *,
-        customer:customers!customer_id(full_name),
+        customer:customers!customer_id(full_name, phone_number),
         secondary_customer:customers!secondary_customer_id(full_name),
         station:stations(name),
         game:games(name)
@@ -102,6 +102,7 @@ const fetchActiveSessions = async (): Promise<Session[]> => {
         payment_status: s.payment_status as 'pending' | 'paid' | 'cancelled',
         created_at: s.created_at,
         customerName: (s.customer as any)?.full_name || 'Unknown Customer',
+        customerPhoneNumber: (s.customer as any)?.phone_number || null,
         secondaryCustomerName: (s.secondary_customer as any)?.full_name || null,
         stationName: (s.station as any)?.name || 'Unknown Station',
         game_name: (s.game as any)?.name || 'Unknown Game',
@@ -546,5 +547,3 @@ export default function SessionsPage() {
     </div>
   );
 }
-
-    

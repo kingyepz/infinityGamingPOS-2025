@@ -1,9 +1,9 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import type { Session, CustomerOffer } from '@/types';
 import { Button } from "@/components/ui/button";
@@ -28,26 +28,39 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from '@/components/ui/separator';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 import { format } from 'date-fns';
-import { Loader2, Split, Gift } from 'lucide-react';
+import { Loader2, Split, Gift, Smartphone, AlertCircle, CheckCircle, Wallet, CreditCard } from 'lucide-react';
 import { Label } from '@/components/ui/label';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 export type Payer = 'primary' | 'secondary' | 'split';
+type StkStatus = 'idle' | 'sending' | 'pending' | 'success' | 'error';
+type PaymentMethod = 'cash' | 'mpesa-manual' | 'mpesa-stk';
 
 const paymentFormSchema = z.object({
-  paymentMethod: z.enum(['cash', 'mpesa'], { required_error: "Payment method is required." }),
+  paymentMethod: z.custom<PaymentMethod>(),
   mpesaReference: z.string().optional(),
+  phoneNumber: z.string().optional(),
 }).refine(data => {
-  if (data.paymentMethod === 'mpesa') {
+  if (data.paymentMethod === 'mpesa-manual') {
     return !!data.mpesaReference && data.mpesaReference.trim().length > 3;
   }
   return true;
 }, {
-  message: "MPesa reference must be valid for MPesa payments.",
+  message: "M-Pesa reference is required for manual entry.",
   path: ["mpesaReference"],
+}).refine(data => {
+    if (data.paymentMethod === 'mpesa-stk') {
+        const phoneRegex = /^(?:254|0)?(7[0-9]{8})$/;
+        return !!data.phoneNumber && phoneRegex.test(data.phoneNumber);
+    }
+    return true;
+}, {
+    message: "A valid Safaricom number (e.g., 0712345678) is required.",
+    path: ["phoneNumber"],
 });
 
 type PaymentFormData = z.infer<typeof paymentFormSchema>;
@@ -77,9 +90,13 @@ const fetchActiveOffers = async (customerId: string): Promise<CustomerOffer[]> =
     return data;
 }
 
-
 export default function EndSessionDialog({ isOpen, onClose, session, onProcessPayment, isProcessing }: EndSessionDialogProps) {
   const [payer, setPayer] = useState<Payer>('primary');
+  const [stkStatus, setStkStatus] = useState<StkStatus>('idle');
+  const [stkError, setStkError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const hasTwoPlayers = !!session.secondary_customer_id;
 
   const form = useForm<PaymentFormData>({
@@ -87,6 +104,7 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
     defaultValues: {
       paymentMethod: "cash",
       mpesaReference: "",
+      phoneNumber: session.customerPhoneNumber || "",
     },
   });
   
@@ -97,31 +115,107 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
     queryFn: () => fetchActiveOffers(session.customer_id),
     enabled: isOpen,
   });
-
-  React.useEffect(() => {
+  
+  // Reset form and state when dialog opens or session changes
+  useEffect(() => {
     if (isOpen) {
-      form.reset({ paymentMethod: "cash", mpesaReference: "" });
+      form.reset({ 
+        paymentMethod: "cash", 
+        mpesaReference: "",
+        phoneNumber: session.customerPhoneNumber || "",
+      });
       setPayer('primary');
+      setStkStatus('idle');
+      setStkError(null);
     }
-  }, [isOpen, form]);
+  }, [isOpen, session.id, form, session.customerPhoneNumber]);
+
+  // STK Push polling logic
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | undefined;
+    if (stkStatus === 'pending') {
+      const startTime = Date.now();
+      const poll = async () => {
+        if (Date.now() - startTime > 60000) { // 1 minute timeout
+          setStkStatus('error');
+          setStkError('Payment timed out. The customer did not complete the transaction in time.');
+          clearInterval(intervalId);
+          return;
+        }
+
+        const supabase = createClient();
+        const { data } = await supabase.from('sessions').select('payment_status, mpesa_reference').eq('id', session.id).single();
+        if (data?.payment_status === 'paid') {
+          setStkStatus('success');
+          // Manually update the form with the reference from the DB
+          form.setValue('mpesaReference', data.mpesa_reference || 'N/A');
+          clearInterval(intervalId);
+        }
+      };
+      intervalId = setInterval(poll, 3000); // Poll every 3 seconds
+    }
+    return () => clearInterval(intervalId);
+  }, [stkStatus, session.id, form]);
 
 
   const handleSubmit = (data: PaymentFormData) => {
+    let finalPaymentMethod: 'cash' | 'mpesa' | 'mpesa-stk' = 'cash';
+    if (data.paymentMethod === 'mpesa-manual') finalPaymentMethod = 'mpesa';
+    if (data.paymentMethod === 'mpesa-stk') finalPaymentMethod = 'mpesa-stk';
+    
     const paidSession: Session = {
       ...session,
       payment_status: 'paid',
-      payment_method: data.paymentMethod,
-      mpesa_reference: data.paymentMethod === 'mpesa' ? data.mpesaReference?.trim() : undefined,
+      payment_method: finalPaymentMethod,
+      mpesa_reference: data.mpesaReference?.trim(),
     };
     onProcessPayment(paidSession, payer);
   };
+  
+  const handleSendStkPush = async () => {
+    const phoneNumber = form.getValues("phoneNumber");
+    const validationResult = await form.trigger("phoneNumber");
+    if (!validationResult) return;
+
+    setStkStatus('sending');
+    setStkError(null);
+    
+    try {
+        const response = await fetch('/api/stk-push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: session.amount_charged,
+                phoneNumber: phoneNumber,
+                sessionId: session.id
+            }),
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to initiate STK Push.');
+        }
+        
+        toast({ title: "Request Sent!", description: "A payment prompt has been sent to the customer's phone." });
+        setStkStatus('pending');
+
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "An unknown error occurred.";
+        setStkStatus('error');
+        setStkError(message);
+        toast({ title: "STK Push Failed", description: message, variant: "destructive" });
+    }
+  }
 
   const amountPerPlayer = session.amount_charged ? (session.amount_charged / 2).toFixed(2) : '0.00';
   const pointsPerPlayer = session.points_earned ? Math.floor(session.points_earned / 2) : 0;
+  
+  const isBusy = isProcessing || stkStatus === 'sending' || stkStatus === 'pending';
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open && !isProcessing) onClose();
+      if (!open && !isBusy) onClose();
     }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -131,9 +225,8 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
           </DialogDescription>
         </DialogHeader>
         
-        {isLoadingOffers ? (
-          <Skeleton className="h-16 w-full" />
-        ) : activeOffers && activeOffers.length > 0 && (
+        {isLoadingOffers && <Skeleton className="h-16 w-full" />}
+        {activeOffers && activeOffers.length > 0 && (
           <Alert>
             <Gift className="h-4 w-4" />
             <AlertTitle className="font-bold">🎉 Birthday Offer Available!</AlertTitle>
@@ -189,55 +282,88 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
-              control={form.control}
-              name="paymentMethod"
-              render={({ field }) => (
-                <FormItem className="space-y-2">
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                <FormItem>
                   <FormLabel>Payment Method</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex space-x-4"
-                      disabled={isProcessing}
+                   <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="grid grid-cols-1 gap-2"
+                        disabled={isBusy}
                     >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="cash" id="cash"/>
-                        </FormControl>
-                        <FormLabel htmlFor="cash" className="font-normal">Cash</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="mpesa" id="mpesa"/>
-                        </FormControl>
-                        <FormLabel htmlFor="mpesa" className="font-normal">MPesa</FormLabel>
-                      </FormItem>
+                        <Label className="flex items-center gap-3 rounded-md border p-3 hover:bg-accent has-[[data-state=checked]]:border-primary">
+                            <Wallet className="h-5 w-5 text-blue-500"/>
+                            <span className="flex-1">Cash</span>
+                            <RadioGroupItem value="cash" />
+                        </Label>
+                        <Label className="flex items-center gap-3 rounded-md border p-3 hover:bg-accent has-[[data-state=checked]]:border-primary">
+                            <CreditCard className="h-5 w-5 text-green-500"/>
+                            <span className="flex-1">M-Pesa (Manual Ref)</span>
+                            <RadioGroupItem value="mpesa-manual" />
+                        </Label>
+                         <Label className="flex items-center gap-3 rounded-md border p-3 hover:bg-accent has-[[data-state=checked]]:border-primary">
+                            <Smartphone className="h-5 w-5 text-green-600"/>
+                             <span className="flex-1">M-Pesa Express (STK)</span>
+                            <RadioGroupItem value="mpesa-stk" />
+                        </Label>
                     </RadioGroup>
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {paymentMethod === 'mpesa' && (
+            
+            {paymentMethod === 'mpesa-manual' && (
               <FormField
                 control={form.control}
                 name="mpesaReference"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>MPesa Reference Code</FormLabel>
+                    <FormLabel>M-Pesa Reference Code</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. RKT123ABC45 (case-insensitive)" {...field} value={field.value || ''} disabled={isProcessing} />
+                      <Input placeholder="e.g. RKT123ABC45 (case-insensitive)" {...field} value={field.value || ''} disabled={isBusy} />
                     </FormControl>
-                     {payer === 'split' && <p className="text-xs text-muted-foreground mt-1">Enter both reference codes separated by a comma if needed.</p>}
                     <FormMessage />
                   </FormItem>
                 )}
               />
             )}
+
+            {paymentMethod === 'mpesa-stk' && (
+                <div className="space-y-4 rounded-md border bg-muted/50 p-4">
+                    <FormField
+                        control={form.control}
+                        name="phoneNumber"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Customer's M-Pesa Number</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g. 0712345678" {...field} value={field.value || ''} disabled={isBusy} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <Button type="button" onClick={handleSendStkPush} disabled={isBusy} className="w-full">
+                        {stkStatus === 'sending' && <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending...</>}
+                        {stkStatus === 'pending' && <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Waiting for Customer...</>}
+                        {stkStatus === 'success' && <><CheckCircle className="mr-2 h-4 w-4" />Payment Received!</>}
+                        {(stkStatus === 'idle' || stkStatus === 'error') && 'Send Payment Request'}
+                    </Button>
+                    {stkStatus === 'error' && (
+                        <Alert variant="destructive" className="text-xs">
+                           <AlertCircle className="h-4 w-4" />
+                           <AlertTitle>Error</AlertTitle>
+                           <AlertDescription>{stkError}</AlertDescription>
+                        </Alert>
+                    )}
+                </div>
+            )}
+            
             <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isProcessing}>Cancel</Button>
-              <Button type="submit" disabled={isProcessing}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>Cancel</Button>
+              <Button type="submit" disabled={isBusy || (paymentMethod === 'mpesa-stk' && stkStatus !== 'success')}>
                 {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Confirm Payment
               </Button>
