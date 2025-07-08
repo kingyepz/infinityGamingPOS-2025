@@ -201,7 +201,7 @@ export default function CustomerDetailPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <Cake className="h-5 w-5 text-muted-foreground" />
-                        <span>{customerDob ? format(customerDob, 'MMMM do') : 'Birthday not set'}</span>
+                        <span>{customerDob ? format(customerDob, 'dd/MM/yyyy') : 'Birthday not set'}</span>
                     </div>
                      <div className="flex items-center gap-3">
                         <Star className="h-5 w-5 text-muted-foreground" />

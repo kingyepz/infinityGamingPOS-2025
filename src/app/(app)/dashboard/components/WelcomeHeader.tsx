@@ -29,7 +29,7 @@ export function WelcomeHeader() {
       <h1 className="text-3xl font-headline font-bold tracking-tight">Welcome, {userName}!</h1>
       <p className="text-muted-foreground mt-1 text-sm">
         {/* Only render the formatted date when it's available on the client */}
-        {currentDateTime ? format(currentDateTime, "EEEE, MMMM do, yyyy 'at' h:mm:ss a") : <>&nbsp;</>}
+        {currentDateTime ? format(currentDateTime, "dd/MM/yyyy, p") : <>&nbsp;</>}
       </p>
     </div>
   );
