@@ -66,7 +66,7 @@ export default function TransactionHistoryTable({ transactions }: TransactionHis
             <TableBody>
               {transactions.map((tx) => (
                 <TableRow key={tx.id}>
-                  <TableCell className="whitespace-nowrap">{format(new Date(tx.created_at), 'PPp')}</TableCell>
+                  <TableCell className="whitespace-nowrap">{format(new Date(tx.created_at), 'dd/MM/yyyy p')}</TableCell>
                    <TableCell className="whitespace-nowrap">
                        <Badge variant={getTransactionBadgeVariant(tx.transaction_type)} className="capitalize flex items-center gap-1.5">
                            {getTransactionIcon(tx.transaction_type)}

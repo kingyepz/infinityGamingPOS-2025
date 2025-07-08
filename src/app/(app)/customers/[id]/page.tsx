@@ -155,7 +155,7 @@ export default function CustomerDetailPage() {
                             <User className="h-7 w-7 text-primary" />
                             {customer.full_name}
                         </CardTitle>
-                        <CardDescription>Joined on {new Date(customer.join_date).toLocaleDateString()}</CardDescription>
+                        <CardDescription>Joined on {format(new Date(customer.join_date), 'dd/MM/yyyy')}</CardDescription>
                     </div>
                     <Button variant="outline" onClick={() => setIsEditFormOpen(true)}>
                         <Edit className="mr-2 h-4 w-4" />

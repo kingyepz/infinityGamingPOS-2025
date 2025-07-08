@@ -57,7 +57,7 @@ export default function StationTable({ stations, onEdit, onDelete }: StationTabl
                 </Badge>
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                {station.created_at ? format(new Date(station.created_at), 'PPP') : 'N/A'}
+                {station.created_at ? format(new Date(station.created_at), 'dd/MM/yyyy') : 'N/A'}
               </TableCell>
               <TableCell className="text-right space-x-2 whitespace-nowrap">
                 <Button variant="outline" size="icon" onClick={() => onEdit(station)} aria-label={`Edit ${station.name}`}>

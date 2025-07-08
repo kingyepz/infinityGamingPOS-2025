@@ -73,7 +73,7 @@ export default function CustomerTable({ customers, onDelete }: CustomerTableProp
                 </Badge>
               </TableCell>
               <TableCell className="whitespace-nowrap">
-                {customer.join_date ? format(new Date(customer.join_date), 'PPP') : 'N/A'}
+                {customer.join_date ? format(new Date(customer.join_date), 'dd/MM/yyyy') : 'N/A'}
               </TableCell>
               <TableCell className="text-right space-x-2 whitespace-nowrap">
                 <Button asChild variant="outline" size="icon" aria-label={`View details for ${customer.full_name}`}>

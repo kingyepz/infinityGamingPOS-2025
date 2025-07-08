@@ -50,7 +50,7 @@ export default function PaymentsTable({ payments, onViewReceipt }: PaymentsTable
           {payments.map((payment) => (
             <TableRow key={payment.id}>
               <TableCell className="font-medium whitespace-nowrap">
-                 {payment.end_time ? format(parseISO(payment.end_time), 'PPp') : 'N/A'}
+                 {payment.end_time ? format(parseISO(payment.end_time), 'dd/MM/yyyy p') : 'N/A'}
               </TableCell>
               <TableCell className="whitespace-nowrap">
                 {payment.customerName}

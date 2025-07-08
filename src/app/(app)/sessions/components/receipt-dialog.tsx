@@ -109,7 +109,7 @@ export default function ReceiptDialog({ isOpen, onClose, session }: ReceiptDialo
           </div>
 
           <hr className="p-hr" />
-          <DetailItem label="Date:" value={format(new Date(), 'dd/MM/yy HH:mm')} />
+          <DetailItem label="Date:" value={format(new Date(), 'dd/MM/yyyy HH:mm')} />
           <DetailItem label="Receipt No:" value={session.id.slice(-8).toUpperCase()} />
           <hr className="p-hr" />
 

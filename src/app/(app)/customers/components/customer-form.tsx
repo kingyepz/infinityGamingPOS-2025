@@ -121,20 +121,20 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubm
           name="dob"
           render={({ field }) => {
             const [inputValue, setInputValue] = React.useState<string>(
-              field.value ? format(field.value, 'yyyy-MM-dd') : ''
+              field.value ? format(field.value, 'dd/MM/yyyy') : ''
             );
             const [popoverOpen, setPopoverOpen] = React.useState(false);
 
             React.useEffect(() => {
               if (field.value) {
-                setInputValue(format(field.value, 'yyyy-MM-dd'));
+                setInputValue(format(field.value, 'dd/MM/yyyy'));
               } else {
                 setInputValue('');
               }
             }, [field.value]);
             
             const handleBlur = () => {
-              const parsedDate = parse(inputValue, 'yyyy-MM-dd', new Date());
+              const parsedDate = parse(inputValue, 'dd/MM/yyyy', new Date());
               if (isValid(parsedDate) && !(parsedDate > new Date() || parsedDate < new Date("1950-01-01"))) {
                   field.onChange(parsedDate);
               } else {
@@ -149,7 +149,7 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubm
                   <div className="relative">
                     <FormControl>
                       <Input
-                        placeholder="yyyy-mm-dd"
+                        placeholder="dd/mm/yyyy"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onBlur={handleBlur}
