@@ -187,6 +187,10 @@ export default function SessionsPage() {
     mutationFn: async (params: { paidSession: Session; payer: Payer }) => {
         const { paidSession } = params;
         const supabase = createClient();
+        
+        // Get current user to set as recorder
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("You must be logged in to process payments.");
 
         // NEW: Secure, server-side check for duplicate MPesa reference via RPC
         if (paidSession.payment_method === 'mpesa' && paidSession.mpesa_reference) {
@@ -220,6 +224,7 @@ export default function SessionsPage() {
                 payment_method: paidSession.payment_method,
                 // Normalize to uppercase and comma-space separated for consistency
                 mpesa_reference: paidSession.mpesa_reference ? paidSession.mpesa_reference.split(',').map(ref => ref.trim().toUpperCase()).filter(Boolean).join(', ') : undefined,
+                recorded_by: user.id, // Record which user processed the payment
             })
             .eq('id', paidSession.id);
         if (error) throw new Error(`Could not update session: ${error.message}`);

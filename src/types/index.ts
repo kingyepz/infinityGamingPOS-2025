@@ -62,6 +62,7 @@ export interface Session {
   notes?: string | null; // text
   payment_method?: 'cash' | 'mpesa' | null; // Assumed to exist in DB
   mpesa_reference?: string | null; // Assumed to exist in DB
+  recorded_by?: string | null; // uuid of user who processed payment
   
   // Client-side fields for UI display, state management, and calculations
   customerName: string; // Fetched via join or lookup
@@ -69,6 +70,7 @@ export interface Session {
   stationName: string; // Fetched via join or lookup
   game_name?: string; // Fetched via join or lookup
   rate: number; // For calculation, not stored directly in DB
+  recorderName?: string | null; // Fetched via join on recorded_by
 }
 
 
