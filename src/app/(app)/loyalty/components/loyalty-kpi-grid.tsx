@@ -8,21 +8,31 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { HelpCircle, Users, TrendingUp, Gift, Repeat, BarChart, Target, Coins } from 'lucide-react';
-import { CURRENCY_SYMBOL } from '@/lib/constants';
+import { HelpCircle, Users, Target, BarChart, Repeat, Gift, Coins } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface LoyaltyKpiGridProps {
   stats: any;
   isLoading: boolean;
 }
 
-const kpiConfig = [
+interface KpiConfigItem {
+  key: string;
+  title: string;
+  icon: LucideIcon;
+  description: string;
+  format: (value: number) => string;
+  linkTo?: string;
+}
+
+const kpiConfig: KpiConfigItem[] = [
   {
     key: 'activeMembers30',
     title: 'Active Members (30d)',
     icon: Users,
     description: 'Customers active in the last 30 days.',
     format: (value: number) => value.toLocaleString(),
+    linkTo: '/customers',
   },
   {
     key: 'redemptionRate',
@@ -65,6 +75,7 @@ const kpiConfig = [
     icon: Coins,
     description: 'All unredeemed loyalty points in the system.',
     format: (value: number) => value.toLocaleString(),
+    linkTo: '/customers',
   },
 ];
 
@@ -81,6 +92,7 @@ export default function LoyaltyKpiGrid({ stats, isLoading }: LoyaltyKpiGridProps
                   value={stats ? kpi.format(stats[kpi.key] ?? 0) : '0'}
                   icon={kpi.icon}
                   isLoading={isLoading}
+                  linkTo={kpi.linkTo}
                   description={
                      <span className="flex items-center text-xs text-muted-foreground">
                         <HelpCircle className="h-3 w-3 mr-1.5 flex-shrink-0" />
