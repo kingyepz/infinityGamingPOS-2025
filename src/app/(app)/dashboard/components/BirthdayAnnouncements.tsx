@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Cake, Gift } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 
 interface BirthdayCustomer {
@@ -25,7 +25,7 @@ const fetchBirthdayCustomers = async (): Promise<{ today: BirthdayCustomer[], up
 
     if (error) {
         console.error("Error fetching birthday customers:", error);
-        throw new Error(`Could not fetch birthday customers. This likely means the required database function 'get_birthday_customers' is missing. Please check the SQL provided. DB Error: ${error.message}`);
+        throw new Error(`Could not fetch birthday customers. This likely means the required database function 'get_birthday_customers' is missing or has an error. Please check the SQL provided. DB Error: ${error.message}`);
     }
     // The RPC returns a single object with 'today' and 'upcoming' keys
     return data;
@@ -38,10 +38,12 @@ export function BirthdayAnnouncements() {
         refetchInterval: 60 * 60 * 1000, // Refetch every hour
     });
 
-    const formatUpcomingDate = (isoDate: string) => {
-        // This function takes a full ISO date string (e.g., "2024-07-15")
-        // and formats it into a more readable "Month Day" format (e.g., "July 15th").
-        const date = parseISO(isoDate);
+    // This new function is more robust against timezone issues.
+    // It correctly parses a "YYYY-MM-DD" string as a local date.
+    const formatUpcomingDate = (dateString: string) => {
+        const [year, month, day] = dateString.split('-').map(Number);
+        // Month is 0-indexed for JavaScript's Date constructor.
+        const date = new Date(year, month - 1, day);
         return format(date, 'MMMM do');
     }
 
