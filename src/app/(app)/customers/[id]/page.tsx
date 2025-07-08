@@ -20,17 +20,44 @@ import { format } from 'date-fns';
 
 const fetchCustomerDetails = async (id: string): Promise<Customer> => {
     const supabase = createClient();
-    // Embed loyalty transactions directly with the customer query.
-    // Order the embedded transactions by creation date.
-    const { data, error } = await supabase
+    
+    // Step 1: Fetch the main customer data.
+    const { data: customerData, error: customerError } = await supabase
         .from('customers')
-        .select('*, loyalty_transactions(*)')
+        .select('*')
         .eq('id', id)
-        .order('created_at', { referencedTable: 'loyalty_transactions', ascending: false })
         .single();
         
-    if (error) throw new Error(error.message);
-    return data;
+    if (customerError) {
+        console.error("Error fetching customer:", customerError.message);
+        throw new Error(customerError.message);
+    }
+    
+    if (!customerData) {
+        throw new Error("Customer not found.");
+    }
+
+    // Step 2: Fetch the associated loyalty transactions for that customer.
+    // This is a separate query to be more explicit and avoid silent RLS issues on joins.
+    const { data: transactionData, error: transactionError } = await supabase
+        .from('loyalty_transactions')
+        .select('*')
+        .eq('customer_id', id)
+        .order('created_at', { ascending: false });
+
+    if (transactionError) {
+        // Don't fail the whole page load. Log the error and return the customer with empty transactions.
+        // This is a strong indicator of an RLS policy issue on the 'loyalty_transactions' table.
+        console.error(
+            "Error fetching loyalty transactions, likely an RLS policy issue:", 
+            transactionError.message
+        );
+        (customerData as Customer).loyalty_transactions = [];
+    } else {
+        (customerData as Customer).loyalty_transactions = transactionData || [];
+    }
+
+    return customerData as Customer;
 };
 
 const fetchSessionStats = async (customerId: string): Promise<{ solo: number; coop: number }> => {
