@@ -53,6 +53,13 @@ const kpiConfig = [
     format: (value: number) => `${value.toFixed(1)}%`,
   },
   {
+    key: 'pendingBirthdayRewards',
+    title: 'Pending Birthday Rewards',
+    icon: Gift,
+    description: 'Number of active, unclaimed birthday rewards.',
+    format: (value: number) => value.toLocaleString(),
+  },
+  {
     key: 'totalPointsOutstanding',
     title: 'Total Points Outstanding',
     icon: Coins,
@@ -63,7 +70,7 @@ const kpiConfig = [
 
 export default function LoyaltyKpiGrid({ stats, isLoading }: LoyaltyKpiGridProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {kpiConfig.map((kpi) => (
         <TooltipProvider key={kpi.key}>
           <Tooltip>
