@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import CustomerForm, { type CustomerFormData } from '../components/customer-form';
 import { useToast } from "@/hooks/use-toast";
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 
 const fetchCustomerDetails = async (id: string): Promise<Customer> => {
     const supabase = createClient();
@@ -190,7 +190,7 @@ export default function CustomerDetailPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <Cake className="h-5 w-5 text-muted-foreground" />
-                        <span>{customer.dob ? format(new Date(customer.dob), 'MMMM do') : 'Birthday not set'}</span>
+                        <span>{customer.dob ? format(parse(customer.dob, 'yyyy-MM-dd', new Date()), 'MMMM do') : 'Birthday not set'}</span>
                     </div>
                      <div className="flex items-center gap-3">
                         <Star className="h-5 w-5 text-muted-foreground" />
@@ -219,7 +219,7 @@ export default function CustomerDetailPage() {
                             full_name: customer.full_name,
                             phone_number: customer.phone_number,
                             email: customer.email,
-                            dob: customer.dob ? new Date(customer.dob) : undefined,
+                            dob: customer.dob ? parse(customer.dob, 'yyyy-MM-dd', new Date()) : undefined,
                             loyalty_points: customer.loyalty_points,
                             loyalty_tier: customer.loyalty_tier,
                         }}
