@@ -14,6 +14,7 @@ export interface Customer {
   join_date: string;
   dob?: string | null;
   isActive?: boolean;
+  loyalty_transactions?: LoyaltyTransaction[];
 }
 
 export interface Station {

@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Customer, LoyaltyTransaction } from '@/types';
+import type { Customer } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 import { useParams, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,14 +20,15 @@ import { format } from 'date-fns';
 
 const fetchCustomerDetails = async (id: string): Promise<Customer> => {
     const supabase = createClient();
-    const { data, error } = await supabase.from('customers').select('*').eq('id', id).single();
-    if (error) throw new Error(error.message);
-    return data;
-};
-
-const fetchTransactionHistory = async (customerId: string): Promise<LoyaltyTransaction[]> => {
-    const supabase = createClient();
-    const { data, error } = await supabase.from('loyalty_transactions').select('*').eq('customer_id', customerId).order('created_at', { ascending: false });
+    // Embed loyalty transactions directly with the customer query.
+    // Order the embedded transactions by creation date.
+    const { data, error } = await supabase
+        .from('customers')
+        .select('*, loyalty_transactions(*)')
+        .eq('id', id)
+        .order('created_at', { referencedTable: 'loyalty_transactions', ascending: false })
+        .single();
+        
     if (error) throw new Error(error.message);
     return data;
 };
@@ -117,12 +118,6 @@ export default function CustomerDetailPage() {
         enabled: !!customerId,
     });
     
-    const { data: transactions, isLoading: isLoadingTransactions, isError: isErrorTransactions, error: transactionError } = useQuery<LoyaltyTransaction[]>({
-        queryKey: ['transactions', customerId],
-        queryFn: () => fetchTransactionHistory(customerId),
-        enabled: !!customerId,
-    });
-    
     const { data: sessionStats, isLoading: isLoadingStats } = useQuery({
         queryKey: ['sessionStats', customerId],
         queryFn: () => fetchSessionStats(customerId),
@@ -153,7 +148,7 @@ export default function CustomerDetailPage() {
         });
     };
 
-    if (isLoadingCustomer || isLoadingTransactions || isLoadingStats) {
+    if (isLoadingCustomer || isLoadingStats) {
         return (
             <div className="space-y-6">
                  <Skeleton className="h-10 w-48" />
@@ -250,11 +245,7 @@ export default function CustomerDetailPage() {
                 </CardContent>
             </Card>
 
-            {isErrorTransactions ? (
-                <p className="text-center text-destructive py-8">Error loading transactions: {transactionError?.message}</p>
-            ) : (
-                <TransactionHistoryTable transactions={transactions || []} />
-            )}
+            <TransactionHistoryTable transactions={customer.loyalty_transactions || []} />
 
             <Dialog open={isEditFormOpen} onOpenChange={setIsEditFormOpen}>
                  <DialogContent className="sm:max-w-md">
