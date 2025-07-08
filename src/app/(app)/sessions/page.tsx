@@ -245,9 +245,13 @@ export default function SessionsPage() {
                 .update({ is_used: true, used_at: new Date().toISOString(), session_id: paidSession.id })
                 .eq('id', paidSession.offer_id);
             if (offerError) {
-                // Not critical, but log it and notify admin.
-                console.error("Failed to mark offer as used:", offerError);
-                toast({ title: "Offer Update Warning", description: `Session paid, but failed to mark offer ${paidSession.offer_id} as used. Please check manually.`, variant: "destructive", duration: 10000 });
+                console.error("CRITICAL: Failed to mark offer as used:", offerError);
+                toast({ 
+                    title: "CRITICAL: OFFER REDEMPTION FAILED", 
+                    description: `The birthday offer could not be marked as 'used' due to a database permission error. The customer can reuse the offer until this is fixed. Please add an UPDATE policy to your 'customer_offers' table in Supabase.`,
+                    variant: "destructive", 
+                    duration: 30000
+                });
             }
         }
         
@@ -542,3 +546,5 @@ export default function SessionsPage() {
     </div>
   );
 }
+
+    
