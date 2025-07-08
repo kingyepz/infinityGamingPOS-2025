@@ -10,6 +10,7 @@ export interface Customer {
   loyalty_points: number;
   loyalty_tier: string;
   join_date: string;
+  dob?: string | null;
 }
 
 export interface Station {

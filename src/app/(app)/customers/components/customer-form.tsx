@@ -23,8 +23,13 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+
 
 const phoneRegex = new RegExp(
   /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
@@ -34,6 +39,7 @@ const customerFormSchema = z.object({
   full_name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   phone_number: z.string().regex(phoneRegex, 'Invalid phone number').min(10, { message: "Phone number must be at least 10 digits."}),
   email: z.string().email({ message: "Invalid email address." }),
+  dob: z.date().optional(),
   loyalty_points: z.coerce.number().int().min(0, "Points cannot be negative.").optional(),
   loyalty_tier: z.enum(['Bronze', 'Silver', 'Gold', 'Platinum']).optional(),
 });
@@ -106,6 +112,48 @@ export default function CustomerForm({ onSubmit, defaultValues, onCancel, isSubm
               <FormControl>
                 <Input type="email" placeholder="e.g. john.doe@example.com" {...field} disabled={isSubmitting} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="dob"
+          render={({ field }) => (
+            <FormItem className="flex flex-col">
+              <FormLabel>Date of Birth</FormLabel>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !field.value && "text-muted-foreground"
+                      )}
+                      disabled={isSubmitting}
+                    >
+                      {field.value ? (
+                        format(field.value, "PPP")
+                      ) : (
+                        <span>Pick a date</span>
+                      )}
+                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={field.onChange}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date("1950-01-01")
+                    }
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
               <FormMessage />
             </FormItem>
           )}

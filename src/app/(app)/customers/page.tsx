@@ -36,10 +36,15 @@ const fetchCustomers = async (): Promise<Customer[]> => {
 
 const addCustomer = async (customer: AddCustomerPayload) => {
   const supabase = createClient();
+  const insertPayload = {
+    ...customer,
+    dob: customer.dob ? customer.dob.toISOString().split('T')[0] : null,
+  }
+
   // Step 1: Insert the customer without any points. The default is 0.
   const { data: newCustomer, error: customerError } = await supabase
     .from('customers')
-    .insert([customer])
+    .insert([insertPayload])
     .select()
     .single();
 
@@ -129,6 +134,7 @@ export default function CustomersPage() {
       full_name: formData.full_name,
       phone_number: formData.phone_number,
       email: formData.email,
+      dob: formData.dob,
     });
   };
 

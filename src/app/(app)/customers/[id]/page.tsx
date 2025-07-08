@@ -7,7 +7,7 @@ import type { Customer, LoyaltyTransaction } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 import { useParams, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Edit, Mail, Phone, User, Star } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, User, Star, Cake } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import TransactionHistoryTable from './components/transaction-history-table';
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import CustomerForm, { type CustomerFormData } from '../components/customer-form';
 import { useToast } from "@/hooks/use-toast";
+import { format } from 'date-fns';
 
 const fetchCustomerDetails = async (id: string): Promise<Customer> => {
     const supabase = createClient();
@@ -31,10 +32,14 @@ const fetchTransactionHistory = async (customerId: string): Promise<LoyaltyTrans
     return data;
 };
 
-const updateCustomer = async (customer: Pick<Customer, 'id' | 'full_name' | 'phone_number' | 'email'>) => {
+const updateCustomer = async (customer: Pick<Customer, 'id' | 'full_name' | 'phone_number' | 'email'> & { dob?: Date | null }) => {
   const supabase = createClient();
   const { id, ...updateData } = customer;
-  const { error } = await supabase.from('customers').update(updateData).eq('id', id);
+  const payload = {
+      ...updateData,
+      dob: updateData.dob ? updateData.dob.toISOString().split('T')[0] : null
+  };
+  const { error } = await supabase.from('customers').update(payload).eq('id', id);
   if (error) throw new Error(error.message);
   return null;
 };
@@ -97,6 +102,7 @@ export default function CustomerDetailPage() {
             full_name: formData.full_name,
             phone_number: formData.phone_number,
             email: formData.email,
+            dob: formData.dob,
         });
     };
 
@@ -156,7 +162,7 @@ export default function CustomerDetailPage() {
                         Edit Customer
                     </Button>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
                     <div className="flex items-center gap-3">
                         <Mail className="h-5 w-5 text-muted-foreground" />
                         <a href={`mailto:${customer.email}`} className="text-primary hover:underline">{customer.email}</a>
@@ -164,6 +170,10 @@ export default function CustomerDetailPage() {
                     <div className="flex items-center gap-3">
                         <Phone className="h-5 w-5 text-muted-foreground" />
                         <span>{customer.phone_number}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Cake className="h-5 w-5 text-muted-foreground" />
+                        <span>{customer.dob ? format(new Date(customer.dob), 'MMMM do') : 'Birthday not set'}</span>
                     </div>
                      <div className="flex items-center gap-3">
                         <Star className="h-5 w-5 text-muted-foreground" />
@@ -192,6 +202,7 @@ export default function CustomerDetailPage() {
                             full_name: customer.full_name,
                             phone_number: customer.phone_number,
                             email: customer.email,
+                            dob: customer.dob ? new Date(customer.dob) : undefined,
                             loyalty_points: customer.loyalty_points,
                             loyalty_tier: customer.loyalty_tier,
                         }}
