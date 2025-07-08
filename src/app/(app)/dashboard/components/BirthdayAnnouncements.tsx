@@ -20,6 +20,17 @@ interface BirthdayCustomer {
 
 const fetchBirthdayCustomers = async (): Promise<{ today: BirthdayCustomer[], upcoming: BirthdayCustomer[] }> => {
     const supabase = createClient();
+    
+    // First, silently try to grant rewards. This is safe to call multiple times.
+    // The DB function has logic to prevent duplicate rewards.
+    const { error: grantError } = await supabase.rpc('grant_birthday_rewards');
+    if (grantError) {
+        // Log the error but don't block the UI. This might happen if the function
+        // is run by a user without sufficient permissions, which is expected.
+        // A server-side cron job is the primary/production way this should run.
+        console.warn("Could not run grant_birthday_rewards from client:", grantError.message);
+    }
+
     const { data, error } = await supabase
         .rpc('get_birthday_customers');
 

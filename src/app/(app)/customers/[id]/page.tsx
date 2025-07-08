@@ -3,11 +3,11 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Customer } from '@/types';
+import type { Customer, CustomerOffer } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 import { useParams, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Edit, Mail, Phone, User, Star, Cake, Users } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, User, Star, Cake, Users, Gift } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import TransactionHistoryTable from './components/transaction-history-table';
@@ -17,11 +17,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import CustomerForm, { type CustomerFormData } from '../components/customer-form';
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const fetchCustomerDetails = async (id: string): Promise<Customer> => {
     const supabase = createClient();
     
-    // Step 1: Fetch the main customer data.
     const { data: customerData, error: customerError } = await supabase
         .from('customers')
         .select('*')
@@ -37,8 +37,6 @@ const fetchCustomerDetails = async (id: string): Promise<Customer> => {
         throw new Error("Customer not found.");
     }
 
-    // Step 2: Fetch the associated loyalty transactions for that customer.
-    // This is a separate query to be more explicit and avoid silent RLS issues on joins.
     const { data: transactionData, error: transactionError } = await supabase
         .from('loyalty_transactions')
         .select('*')
@@ -46,15 +44,25 @@ const fetchCustomerDetails = async (id: string): Promise<Customer> => {
         .order('created_at', { ascending: false });
 
     if (transactionError) {
-        // Don't fail the whole page load. Log the error and return the customer with empty transactions.
-        // This is a strong indicator of an RLS policy issue on the 'loyalty_transactions' table.
-        console.error(
-            "Error fetching loyalty transactions, likely an RLS policy issue:", 
-            transactionError.message
-        );
+        console.error("Error fetching loyalty transactions:", transactionError.message);
         (customerData as Customer).loyalty_transactions = [];
     } else {
         (customerData as Customer).loyalty_transactions = transactionData || [];
+    }
+
+    // Step 3: Fetch active offers.
+    const { data: offerData, error: offerError } = await supabase
+        .from('customer_offers')
+        .select('*')
+        .eq('customer_id', id)
+        .eq('is_used', false)
+        .gte('expires_at', new Date().toISOString());
+
+    if (offerError) {
+        console.error("Error fetching customer offers:", offerError.message);
+        (customerData as Customer).offers = [];
+    } else {
+        (customerData as Customer).offers = offerData || [];
     }
 
     return customerData as Customer;
@@ -62,7 +70,6 @@ const fetchCustomerDetails = async (id: string): Promise<Customer> => {
 
 const fetchSessionStats = async (customerId: string): Promise<{ solo: number; coop: number }> => {
     const supabase = createClient();
-    // Fetch sessions where the customer is either the primary or secondary player.
     const { data, error } = await supabase
         .from('sessions')
         .select('id, customer_id, secondary_customer_id')
@@ -73,9 +80,7 @@ const fetchSessionStats = async (customerId: string): Promise<{ solo: number; co
         throw new Error(error.message);
     }
     
-    // Solo sessions are where this customer is the primary player and there's no secondary.
     const solo = data.filter(s => s.customer_id === customerId && !s.secondary_customer_id).length;
-    // Co-op sessions are any sessions with a secondary player.
     const coop = data.filter(s => !!s.secondary_customer_id).length;
 
     return { solo, coop };
@@ -89,8 +94,6 @@ const updateCustomer = async (customer: { id: string; full_name: string; phone_n
     full_name: customer.full_name,
     phone_number: customer.phone_number,
     email: customer.email,
-    // Correctly format the date to YYYY-MM-DD, ignoring timezone conversions.
-    // This creates a UTC date with the same Y-M-D as the local date, then extracts the date part.
     dob: customer.dob ? new Date(customer.dob.getTime() - (customer.dob.getTimezoneOffset() * 60000)).toISOString().split('T')[0] : null,
   };
 
@@ -100,13 +103,10 @@ const updateCustomer = async (customer: { id: string; full_name: string; phone_n
     .eq('id', customer.id);
 
   if (error) {
-    // If there's a database error, throw it
     throw new Error(error.message);
   }
 
   if (count === 0) {
-    // If no rows were updated, it's likely an RLS issue or the record was deleted.
-    // Throw a more specific error to guide the user.
     throw new Error("Update failed. The record may not exist or you may not have permission to modify it. Please check your database's Row Level Security (RLS) policies for the 'customers' table.");
   }
   
@@ -165,7 +165,6 @@ export default function CustomerDetailPage() {
     });
     
     const handleFormSubmit = (formData: CustomerFormData) => {
-        // Loyalty points and tier are managed by triggers, so we don't submit them from the form.
         updateMutation.mutate({
             id: customerId,
             full_name: formData.full_name,
@@ -211,10 +210,8 @@ export default function CustomerDetailPage() {
        return <p className="text-center text-muted-foreground py-8">Customer not found.</p>
     }
 
-    // A robust way to parse 'yyyy-MM-dd' to a local Date object, avoiding timezone pitfalls.
     const parseDateInLocalTime = (dateString: string): Date => {
         const [year, month, day] = dateString.split('-').map(Number);
-        // Creates a date in the local timezone. Month is 0-indexed in JavaScript's Date constructor.
         return new Date(year, month - 1, day);
     };
     const customerDob = customer.dob ? parseDateInLocalTime(customer.dob) : undefined;
@@ -227,6 +224,20 @@ export default function CustomerDetailPage() {
                 Back to All Customers
             </Button>
             
+            {customer.offers && customer.offers.length > 0 && (
+                <Alert className="border-yellow-500/50 text-yellow-700 dark:text-yellow-400 [&>svg]:text-yellow-600 dark:[&>svg]:text-yellow-400">
+                    <Gift className="h-4 w-4" />
+                    <AlertTitle className="font-bold">Active Offer Available!</AlertTitle>
+                    <AlertDescription>
+                        {customer.offers.map(offer => (
+                            <div key={offer.id}>
+                                {offer.description} (Expires: {format(new Date(offer.expires_at), 'dd/MM/yyyy')})
+                            </div>
+                        ))}
+                    </AlertDescription>
+                </Alert>
+            )}
+
             <Card className="shadow-md">
                 <CardHeader className="flex flex-row justify-between items-start">
                     <div>
