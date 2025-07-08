@@ -62,8 +62,7 @@ const addCustomer = async (customer: AddCustomerPayload) => {
     }]);
     
   if (transactionError) {
-    // We now handle this in the mutation's onSuccess to provide user feedback.
-    console.error("Failed to add bonus points transaction:", transactionError.message);
+    // This is now handled in the mutation's onSuccess to provide user feedback.
   }
   
   // Return the customer and a flag indicating if the bonus was awarded
