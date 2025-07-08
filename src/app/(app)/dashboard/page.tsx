@@ -171,7 +171,7 @@ export default function DashboardPage() {
           title="Loyalty Points Earned Today"
           value={stats?.loyaltyPointsToday.toLocaleString() ?? '0'}
           icon={Star}
-          description="Total points awarded today"
+          description="From new sessions and bonuses"
           isLoading={isLoading}
         />
       </div>
@@ -186,7 +186,7 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-6 lg:col-span-1">
                 <BirthdayAnnouncements />
-                <TopCustomers loyaltyPointsToday={stats?.loyaltyPointsToday} isLoading={isLoading} />
+                <TopCustomers />
                 <PaymentMethodChart />
                 <ConsoleUtilization />
             </div>

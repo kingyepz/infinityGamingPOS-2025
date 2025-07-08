@@ -10,7 +10,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Crown, Star } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 
 interface TopCustomer extends Pick<Customer, 'id' | 'full_name' | 'loyalty_points'> {}
 
@@ -31,8 +30,8 @@ const fetchTopCustomers = async (): Promise<TopCustomer[]> => {
 };
 
 // Modified to accept props from the main dashboard query
-export function TopCustomers({ loyaltyPointsToday, isLoading: isDashboardLoading }: { loyaltyPointsToday?: number; isLoading?: boolean }) {
-  const { data: topCustomers, isLoading: isComponentLoading, isError, error } = useQuery({
+export function TopCustomers() {
+  const { data: topCustomers, isLoading, isError, error } = useQuery({
       queryKey: ['topCustomers'],
       queryFn: fetchTopCustomers,
       refetchInterval: 30000,
@@ -53,22 +52,15 @@ export function TopCustomers({ loyaltyPointsToday, isLoading: isDashboardLoading
         <div className="flex justify-between items-center">
             <div>
               <CardTitle className="text-xl font-headline">Top Customers</CardTitle>
-              <CardDescription>Ranked by overall points.</CardDescription>
+              <CardDescription>Ranked by overall loyalty points.</CardDescription>
             </div>
              <Link href="/loyalty" passHref>
                 <Button variant="outline" size="sm">View All</Button>
             </Link>
         </div>
-        <Separator className="mt-2" />
-        <div className="pt-3 text-sm flex justify-between items-center">
-            <span className="text-muted-foreground">Total Points Awarded Today:</span>
-            <span className="font-bold text-green-500">
-                {isDashboardLoading ? <Skeleton className="h-5 w-12" /> : `+${loyaltyPointsToday?.toLocaleString() || 0}`}
-            </span>
-        </div>
       </CardHeader>
       <CardContent>
-        {isComponentLoading ? (
+        {isLoading ? (
           <div className="space-y-4">
              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
