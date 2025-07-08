@@ -34,9 +34,9 @@ const fetchTransactionHistory = async (customerId: string): Promise<LoyaltyTrans
 const updateCustomer = async (customer: Pick<Customer, 'id' | 'full_name' | 'phone_number' | 'email'>) => {
   const supabase = createClient();
   const { id, ...updateData } = customer;
-  const { data, error } = await supabase.from('customers').update(updateData).eq('id', id).select().single();
+  const { error } = await supabase.from('customers').update(updateData).eq('id', id);
   if (error) throw new Error(error.message);
-  return data;
+  return null;
 };
 
 
