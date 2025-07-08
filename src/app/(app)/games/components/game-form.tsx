@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, isValid, parse } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { CONSOLE_PLATFORMS } from "@/lib/constants";
@@ -261,44 +261,79 @@ export default function GameForm({ onSubmit, defaultValues, onCancel, isSubmitti
               <FormField
                 control={form.control}
                 name="release_date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col pt-1">
-                    <FormLabel>Release Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                            disabled={isBusy}
-                          >
-                            {field.value ? (
-                              format(field.value, "dd/MM/yyyy")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date > new Date() || date < new Date("1980-01-01")
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const [inputValue, setInputValue] = React.useState<string>(
+                    field.value ? format(field.value, 'dd/MM/yyyy') : ''
+                  );
+                  const [popoverOpen, setPopoverOpen] = React.useState(false);
+
+                  React.useEffect(() => {
+                    if (field.value) {
+                      setInputValue(format(field.value, 'dd/MM/yyyy'));
+                    } else {
+                      setInputValue('');
+                    }
+                  }, [field.value]);
+                  
+                  const handleBlur = () => {
+                    const parsedDate = parse(inputValue, 'dd/MM/yyyy', new Date());
+                    if (isValid(parsedDate) && !(parsedDate > new Date() || parsedDate < new Date('1980-01-01'))) {
+                        field.onChange(parsedDate);
+                    } else {
+                        field.onChange(undefined);
+                    }
+                  };
+
+                  return (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Release Date</FormLabel>
+                      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                        <div className="relative">
+                          <FormControl>
+                            <Input
+                              placeholder="dd/mm/yyyy"
+                              value={inputValue}
+                              onChange={(e) => setInputValue(e.target.value)}
+                              onBlur={handleBlur}
+                              disabled={isBusy}
+                              className="pr-10"
+                            />
+                          </FormControl>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={'ghost'}
+                              size="icon"
+                              className={cn(
+                                'absolute right-0 top-0 h-full w-10 rounded-l-none font-normal',
+                                isBusy && 'opacity-50'
+                              )}
+                              disabled={isBusy}
+                              aria-label="Open calendar"
+                            >
+                              <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                        </div>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                              field.onChange(date);
+                              setPopoverOpen(false);
+                            }}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date('1980-01-01')
+                            }
+                            initialFocus
+                            defaultMonth={field.value}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
            </div>
         </div>
