@@ -39,7 +39,7 @@ const updateCustomer = async (customer: { id: string; full_name: string; phone_n
     full_name: customer.full_name,
     phone_number: customer.phone_number,
     email: customer.email,
-    dob: customer.dob ? customer.dob.toISOString().split('T')[0] : null,
+    dob: customer.dob ? format(customer.dob, 'yyyy-MM-dd') : null,
   };
 
   const { error, count } = await supabase

@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
 
 // Explicitly define payloads for clarity
 type AddCustomerPayload = Omit<CustomerFormData, 'loyalty_points' | 'loyalty_tier'>;
@@ -38,7 +39,7 @@ const addCustomer = async (customer: AddCustomerPayload) => {
   const supabase = createClient();
   const insertPayload = {
     ...customer,
-    dob: customer.dob ? customer.dob.toISOString().split('T')[0] : null,
+    dob: customer.dob ? format(customer.dob, 'yyyy-MM-dd') : null,
   }
 
   // Step 1: Insert the customer. The default points are 0.
