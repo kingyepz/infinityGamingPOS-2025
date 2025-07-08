@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import type { Session } from '@/types';
+import type { Session, CustomerOffer } from '@/types';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,8 +28,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from '@/components/ui/separator';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 import { format } from 'date-fns';
-import { Loader2, Split } from 'lucide-react';
+import { Loader2, Split, Gift } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { useQuery } from '@tanstack/react-query';
+import { createClient } from '@/lib/supabase/client';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export type Payer = 'primary' | 'secondary' | 'split';
 
@@ -56,6 +60,24 @@ interface EndSessionDialogProps {
   isProcessing: boolean;
 }
 
+const fetchActiveOffers = async (customerId: string): Promise<CustomerOffer[]> => {
+    if (!customerId) return [];
+    const supabase = createClient();
+    const { data, error } = await supabase
+        .from('customer_offers')
+        .select('*')
+        .eq('customer_id', customerId)
+        .eq('is_used', false)
+        .gte('expires_at', new Date().toISOString());
+
+    if (error) {
+        console.error("Error fetching customer offers:", error);
+        return []; 
+    }
+    return data;
+}
+
+
 export default function EndSessionDialog({ isOpen, onClose, session, onProcessPayment, isProcessing }: EndSessionDialogProps) {
   const [payer, setPayer] = useState<Payer>('primary');
   const hasTwoPlayers = !!session.secondary_customer_id;
@@ -69,6 +91,12 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
   });
   
   const paymentMethod = form.watch("paymentMethod");
+
+  const { data: activeOffers, isLoading: isLoadingOffers } = useQuery({
+    queryKey: ['activeOffers', session.customer_id],
+    queryFn: () => fetchActiveOffers(session.customer_id),
+    enabled: isOpen,
+  });
 
   React.useEffect(() => {
     if (isOpen) {
@@ -102,6 +130,18 @@ export default function EndSessionDialog({ isOpen, onClose, session, onProcessPa
             Finalize session for {session.customerName}{hasTwoPlayers ? ` & ${session.secondaryCustomerName}` : ''} on {session.stationName}.
           </DialogDescription>
         </DialogHeader>
+        
+        {isLoadingOffers ? (
+          <Skeleton className="h-16 w-full" />
+        ) : activeOffers && activeOffers.length > 0 && (
+          <Alert>
+            <Gift className="h-4 w-4" />
+            <AlertTitle className="font-bold">🎉 Birthday Offer Available!</AlertTitle>
+            <AlertDescription>
+              This customer has a <strong>{activeOffers[0].description}</strong>. Please apply the discount manually before confirming payment.
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div className="space-y-3 py-4 text-sm">
           <div className="flex justify-between"><span>Start Time:</span> <span>{format(new Date(session.start_time), 'p')}</span></div>

@@ -95,3 +95,16 @@ export interface LoyaltyTransaction {
   description?: string | null;
   created_at: string;
 }
+
+export interface CustomerOffer {
+  id: string; // uuid
+  customer_id: string; // uuid
+  type: 'free_hour' | 'discount_percent' | 'discount_amount';
+  value: number;
+  description: string;
+  created_at: string;
+  expires_at: string;
+  is_used: boolean;
+  used_at?: string | null;
+  session_id?: string | null;
+}

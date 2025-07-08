@@ -50,6 +50,7 @@ export default function CustomerTable({ customers, onDelete }: CustomerTableProp
             <TableHead className="whitespace-nowrap">Name</TableHead>
             <TableHead className="whitespace-nowrap">Phone</TableHead>
             <TableHead className="whitespace-nowrap">Email</TableHead>
+            <TableHead className="whitespace-nowrap">Birthday</TableHead>
             <TableHead className="whitespace-nowrap">Loyalty Tier</TableHead>
             <TableHead className="text-right whitespace-nowrap">Loyalty Points</TableHead>
             <TableHead className="whitespace-nowrap">Registered On</TableHead>
@@ -62,6 +63,9 @@ export default function CustomerTable({ customers, onDelete }: CustomerTableProp
               <TableCell className="font-medium whitespace-nowrap">{customer.full_name}</TableCell>
               <TableCell className="whitespace-nowrap">{customer.phone_number}</TableCell>
               <TableCell className="whitespace-nowrap">{customer.email}</TableCell>
+              <TableCell className="whitespace-nowrap">
+                {customer.dob ? format(new Date(`${customer.dob}T00:00:00`), 'dd/MM/yyyy') : 'N/A'}
+              </TableCell>
               <TableCell className="whitespace-nowrap">
                 <Badge variant="outline" className={cn("capitalize", getTierClassName(customer.loyalty_tier))}>
                     {customer.loyalty_tier}
