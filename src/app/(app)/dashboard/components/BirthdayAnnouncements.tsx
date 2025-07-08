@@ -12,7 +12,10 @@ import { Separator } from '@/components/ui/separator';
 interface BirthdayCustomer {
     id: string;
     full_name: string;
-    dob: string; // YYYY-MM-DD
+    // For today's birthdays, `dob` is present.
+    dob?: string;
+    // For upcoming birthdays, `next_birthday_date` is present.
+    next_birthday_date?: string;
 }
 
 const fetchBirthdayCustomers = async (): Promise<{ today: BirthdayCustomer[], upcoming: BirthdayCustomer[] }> => {
@@ -36,9 +39,10 @@ export function BirthdayAnnouncements() {
     });
 
     const formatUpcomingDate = (isoDate: string) => {
-        // We receive 'YYYY-MM-DD'
-        const date = parseISO(isoDate); // e.g. 2000-11-25 becomes a Date object.
-        return format(date, 'MMMM do'); // "November 25th"
+        // This function takes a full ISO date string (e.g., "2024-07-15")
+        // and formats it into a more readable "Month Day" format (e.g., "July 15th").
+        const date = parseISO(isoDate);
+        return format(date, 'MMMM do');
     }
 
     return (
@@ -92,9 +96,11 @@ export function BirthdayAnnouncements() {
                             {data?.upcoming && data.upcoming.length > 0 ? (
                                 <ul className="space-y-1 pl-6">
                                     {data.upcoming.map(customer => (
-                                        <li key={customer.id} className="text-sm text-foreground/90 list-disc">
-                                            {customer.full_name} - <span className="text-muted-foreground">{formatUpcomingDate(customer.dob)}</span>
-                                        </li>
+                                        customer.next_birthday_date && (
+                                            <li key={customer.id} className="text-sm text-foreground/90 list-disc">
+                                                {customer.full_name} - <span className="text-muted-foreground">{formatUpcomingDate(customer.next_birthday_date)}</span>
+                                            </li>
+                                        )
                                     ))}
                                 </ul>
                             ) : (
