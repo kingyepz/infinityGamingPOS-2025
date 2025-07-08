@@ -281,18 +281,70 @@ export default function SessionsPage() {
 
 
   // --- Event Handlers ---
-  const handleStartSession = (formData: SessionFormData) => {
-    const newSessionPayload: Partial<Session> = {
-      customer_id: formData.customerId,
-      station_id: formData.stationId,
-      game_id: formData.gameId,
-      session_type: formData.sessionType,
-      start_time: new Date().toISOString(),
-      amount_charged: formData.rate,
-      payment_status: 'pending' as const,
-      secondary_customer_id: formData.secondaryCustomerId || null,
-    };
-    startSessionMutation.mutate(newSessionPayload);
+  const handleStartSession = async (formData: SessionFormData) => {
+    const submittingToast = toast({
+        title: "Validating Session...",
+        description: "Checking customer availability.",
+    });
+
+    try {
+        const supabase = createClient();
+        const customerIdsToCkeck = [formData.customerId];
+        if (formData.secondaryCustomerId) {
+            customerIdsToCkeck.push(formData.secondaryCustomerId);
+        }
+
+        // Final real-time check to prevent double-booking
+        const { data: activeCustomerSessions, error: checkError } = await supabase
+            .from('sessions')
+            .select('customer_id, secondary_customer_id, customers!customer_id(full_name), customers!secondary_customer_id(full_name)')
+            .eq('payment_status', 'pending')
+            .or(`customer_id.in.(${customerIdsToCkeck.join(',')}),secondary_customer_id.in.(${customerIdsToCkeck.join(',')})`);
+        
+        if (checkError) throw new Error(`DB Error: ${checkError.message}`);
+
+        if (activeCustomerSessions && activeCustomerSessions.length > 0) {
+            const activeCustomers = new Set<string>();
+            activeCustomerSessions.forEach((session: any) => {
+                // Find which of the selected customers are in the returned active sessions
+                if (customerIdsToCkeck.includes(session.customer_id)) {
+                    activeCustomers.add(session.customers.full_name);
+                }
+                if (session.secondary_customer_id && customerIdsToCkeck.includes(session.secondary_customer_id)) {
+                    // Need a better way to get the name for secondary customer if the join name is ambiguous
+                    // For now, this is a simplified example.
+                    const secondaryCustomer = customers?.find(c => c.id === session.secondary_customer_id);
+                    if (secondaryCustomer) activeCustomers.add(secondaryCustomer.full_name);
+                }
+            });
+
+            const customerList = Array.from(activeCustomers).join(' & ');
+            throw new Error(`${customerList} is already in an active session.`);
+        }
+
+        // If validation passes, proceed.
+        const newSessionPayload: Partial<Session> = {
+            customer_id: formData.customerId,
+            station_id: formData.stationId,
+            game_id: formData.gameId,
+            session_type: formData.sessionType,
+            start_time: new Date().toISOString(),
+            amount_charged: formData.rate,
+            payment_status: 'pending' as const,
+            secondary_customer_id: formData.secondaryCustomerId || null,
+        };
+        
+        submittingToast.dismiss();
+        startSessionMutation.mutate(newSessionPayload);
+
+    } catch (err) {
+        submittingToast.dismiss();
+        toast({
+            title: "Cannot Start Session",
+            description: (err as Error).message,
+            variant: "destructive",
+        });
+    }
   };
 
   const handleOpenEndSessionDialog = (session: Session) => {
