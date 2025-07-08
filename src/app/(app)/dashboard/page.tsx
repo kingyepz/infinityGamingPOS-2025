@@ -14,6 +14,7 @@ import { PaymentMethodChart } from './components/PaymentMethodChart';
 import { ConsoleUtilization } from './components/ConsoleUtilization';
 import { TopCustomers } from './components/TopCustomers';
 import { PopularGamesChart } from './components/PopularGamesChart';
+import { BirthdayAnnouncements } from './components/BirthdayAnnouncements';
 import { createClient } from '@/lib/supabase/client';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
 
@@ -184,6 +185,7 @@ export default function DashboardPage() {
                 <PopularGamesChart />
             </div>
             <div className="space-y-6 lg:col-span-1">
+                <BirthdayAnnouncements />
                 <TopCustomers loyaltyPointsToday={stats?.loyaltyPointsToday} isLoading={isLoading} />
                 <PaymentMethodChart />
                 <ConsoleUtilization />
