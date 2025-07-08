@@ -35,6 +35,7 @@ const addGame = async (formData: GameFormData) => {
   const supabase = createClient();
   const payload = {
     ...formData,
+    platforms: formData.platforms && formData.platforms.length > 0 ? formData.platforms : null,
     cover_image_url: formData.cover_image_url || null,
     release_date: formData.release_date ? formData.release_date.toISOString().split('T')[0] : null,
   };
@@ -48,6 +49,7 @@ const updateGame = async (payload: {id: string} & GameFormData) => {
   const { id, ...formData } = payload;
   const updateData = {
       ...formData,
+      platforms: formData.platforms && formData.platforms.length > 0 ? formData.platforms : null,
       cover_image_url: formData.cover_image_url || null,
       release_date: formData.release_date ? formData.release_date.toISOString().split('T')[0] : null,
   }
@@ -150,12 +152,16 @@ export default function GamesPage() {
   const getFormDefaultValues = () => {
     if (!selectedGame) return undefined;
     
+    // Ensure platforms is always an array for the form
+    const platforms = Array.isArray(selectedGame.platforms) ? selectedGame.platforms : [];
+
     return {
       name: selectedGame.name,
       genre: selectedGame.genre ?? '',
       description: selectedGame.description ?? '',
+      platforms: platforms,
       cover_image_url: selectedGame.cover_image_url ?? '',
-      release_date: selectedGame.release_date ? new Date(selectedGame.release_date) : undefined,
+      release_date: selectedGame.release_date ? new Date(`${selectedGame.release_date}T00:00:00`) : undefined,
       developer: selectedGame.developer ?? '',
       publisher: selectedGame.publisher ?? '',
     }

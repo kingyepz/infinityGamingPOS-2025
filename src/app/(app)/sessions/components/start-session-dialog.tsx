@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -80,7 +80,34 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
     },
   });
 
-  React.useEffect(() => {
+  const selectedStationId = form.watch("stationId");
+  const primaryCustomerId = form.watch("customerId");
+
+  const compatibleGames = useMemo(() => {
+    if (!selectedStationId) {
+      return []; // No station selected, so no games are compatible yet.
+    }
+    const selectedStation = stations.find(s => s.id === selectedStationId);
+    if (!selectedStation || !selectedStation.type) {
+      return [];
+    }
+    // Filter games where the game's platform array includes the station's type.
+    return games.filter(game => Array.isArray(game.platforms) && game.platforms.includes(selectedStation.type));
+  }, [selectedStationId, stations, games]);
+
+  // Effect to reset game selection if station changes and game is no longer compatible.
+  useEffect(() => {
+    const selectedGameId = form.getValues("gameId");
+    if (selectedGameId) {
+      const isGameCompatible = compatibleGames.some(g => g.id === selectedGameId);
+      if (!isGameCompatible) {
+        form.resetField("gameId");
+      }
+    }
+  }, [compatibleGames, form]);
+
+
+  useEffect(() => {
     if (isOpen) {
       form.reset({
         customerId: "",
@@ -98,8 +125,6 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
     onSubmit(data);
   };
   
-  const primaryCustomerId = form.watch("customerId");
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
         if (!open && !isSubmitting) onClose();
@@ -210,16 +235,22 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Game</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value} 
+                    disabled={isSubmitting || !selectedStationId}
+                  >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a game" />
+                        <SelectValue placeholder={selectedStationId ? "Select a compatible game" : "Select a station first"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                       {games.length > 0 ? games.map(game => (
+                       {compatibleGames.length > 0 ? compatibleGames.map(game => (
                         <SelectItem key={game.id} value={game.id}>{game.name}</SelectItem>
-                      )) : <SelectItem value="no-games" disabled>No games available</SelectItem>}
+                      )) : <SelectItem value="no-games" disabled>
+                            {selectedStationId ? "No compatible games found" : "No games available"}
+                          </SelectItem>}
                     </SelectContent>
                   </Select>
                   <FormMessage />

@@ -25,11 +25,14 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { CONSOLE_PLATFORMS } from "@/lib/constants";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const gameFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   genre: z.string().min(2, { message: "Genre must be at least 2 characters." }),
   description: z.string().optional(),
+  platforms: z.array(z.string()).optional(),
   cover_image_url: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
   release_date: z.date().optional(),
   developer: z.string().optional(),
@@ -55,6 +58,7 @@ export default function GameForm({ onSubmit, defaultValues, onCancel, isSubmitti
       name: "",
       genre: "",
       description: "",
+      platforms: [],
       cover_image_url: "",
       developer: "",
       publisher: "",
@@ -63,7 +67,7 @@ export default function GameForm({ onSubmit, defaultValues, onCancel, isSubmitti
   });
 
   React.useEffect(() => {
-    form.reset(defaultValues || { name: "", genre: "" });
+    form.reset(defaultValues || { name: "", genre: "", platforms: [] });
   }, [defaultValues, form]);
 
 
@@ -156,6 +160,58 @@ export default function GameForm({ onSubmit, defaultValues, onCancel, isSubmitti
           )}
         />
         
+        <Separator />
+
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">Supported Platforms</h3>
+          <FormField
+            control={form.control}
+            name="platforms"
+            render={() => (
+              <FormItem className="space-y-3">
+                <FormLabel className="text-xs text-muted-foreground">Select all compatible platforms for this game.</FormLabel>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  {CONSOLE_PLATFORMS.map((platform) => (
+                    <FormField
+                      key={platform}
+                      control={form.control}
+                      name="platforms"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={platform}
+                            className="flex flex-row items-center space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(platform)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), platform])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== platform
+                                        )
+                                      );
+                                }}
+                                disabled={isBusy}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal text-sm">
+                              {platform}
+                            </FormLabel>
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <Separator />
         
         <div className="space-y-2">

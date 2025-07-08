@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CONSOLE_PLATFORMS } from "@/lib/constants";
 
 const stationFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -32,17 +33,6 @@ interface StationFormProps {
   onCancel: () => void;
   isSubmitting: boolean;
 }
-
-const consoleTypes = [
-    "PlayStation 5",
-    "PlayStation 4",
-    "Xbox Series X",
-    "Xbox Series S",
-    "Xbox One",
-    "Nintendo Switch",
-    "Gaming PC",
-    "VR Headset"
-];
 
 export default function StationForm({ onSubmit, defaultValues, onCancel, isSubmitting }: StationFormProps) {
   const form = useForm<StationFormData>({
@@ -92,7 +82,7 @@ export default function StationForm({ onSubmit, defaultValues, onCancel, isSubmi
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {consoleTypes.map(type => (
+                  {CONSOLE_PLATFORMS.map(type => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
                 </SelectContent>

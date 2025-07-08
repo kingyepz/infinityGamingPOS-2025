@@ -1,5 +1,7 @@
 
 
+import type { CONSOLE_PLATFORMS } from "./lib/constants";
+
 export interface Customer {
   id: string; // UUID from Supabase
   created_at: string; // Supabase returns TIMESTAMPTZ as a string
@@ -28,7 +30,7 @@ export interface Station {
 export interface Game {
   id: string; // uuid
   name: string; // text
-  platforms?: string[] | null; // text[]
+  platforms?: (typeof CONSOLE_PLATFORMS[number])[] | null;
   genre?: string | null; // text
   description?: string | null; // text
   cover_image_url?: string | null; // text

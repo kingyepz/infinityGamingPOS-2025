@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
 interface GameTableProps {
   games: Game[];
@@ -25,6 +26,7 @@ export default function GameTable({ games, onEdit, onDelete }: GameTableProps) {
           <TableRow>
             <TableHead className="whitespace-nowrap">Name</TableHead>
             <TableHead className="whitespace-nowrap">Genre</TableHead>
+            <TableHead className="whitespace-nowrap">Platforms</TableHead>
             <TableHead className="whitespace-nowrap">Developer</TableHead>
             <TableHead className="whitespace-nowrap">Publisher</TableHead>
             <TableHead className="whitespace-nowrap">Release Date</TableHead>
@@ -36,10 +38,21 @@ export default function GameTable({ games, onEdit, onDelete }: GameTableProps) {
             <TableRow key={game.id}>
               <TableCell className="font-medium whitespace-nowrap">{game.name}</TableCell>
               <TableCell className="whitespace-nowrap">{game.genre || 'N/A'}</TableCell>
+              <TableCell className="whitespace-nowrap max-w-xs">
+                 {game.platforms && game.platforms.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                        {game.platforms.map(platform => (
+                            <Badge key={platform} variant="secondary" className="font-normal">{platform}</Badge>
+                        ))}
+                    </div>
+                 ) : (
+                    <span className="text-muted-foreground">N/A</span>
+                 )}
+              </TableCell>
               <TableCell className="whitespace-nowrap">{game.developer || 'N/A'}</TableCell>
               <TableCell className="whitespace-nowrap">{game.publisher || 'N/A'}</TableCell>
               <TableCell className="whitespace-nowrap">
-                {game.release_date ? format(new Date(game.release_date), 'dd/MM/yyyy') : 'N/A'}
+                {game.release_date ? format(new Date(`${game.release_date}T00:00:00`), 'dd/MM/yyyy') : 'N/A'}
               </TableCell>
               <TableCell className="text-right space-x-2 whitespace-nowrap">
                 <Button variant="outline" size="icon" onClick={() => onEdit(game)} aria-label={`Edit ${game.name}`}>

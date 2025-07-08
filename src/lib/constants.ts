@@ -13,3 +13,14 @@ export const BUSINESS_DETAILS = {
   email: "support@infinitygaming.co.ke",
   kraPin: "P012345678X" // Kenya Revenue Authority PIN
 };
+
+export const CONSOLE_PLATFORMS = [
+    "PlayStation 5",
+    "PlayStation 4",
+    "Xbox Series X",
+    "Xbox Series S",
+    "Xbox One",
+    "Nintendo Switch",
+    "Gaming PC",
+    "VR Headset"
+] as const;
