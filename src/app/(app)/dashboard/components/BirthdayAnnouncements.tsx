@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Cake, Gift, Sparkles } from 'lucide-react';
+import { Cake, Gift, Sparkles, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 
 interface BirthdayCustomer {
     id: string;
@@ -103,7 +104,10 @@ export function BirthdayAnnouncements() {
                                                   </Link>
                                                 </Button>
                                             ) : (
-                                                 <span className="text-xs text-muted-foreground italic">Reward already claimed.</span>
+                                                 <Badge variant="outline" className="text-xs font-normal border-green-500/60 bg-green-500/10 text-green-600 dark:text-green-400">
+                                                    <CheckCircle2 className="h-3 w-3 mr-1.5" />
+                                                    Reward Claimed
+                                                </Badge>
                                             )}
                                         </li>
                                     ))}
