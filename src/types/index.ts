@@ -104,7 +104,7 @@ export interface LoyaltyTransaction {
 export interface CustomerOffer {
   id: string; // uuid
   customer_id: string; // uuid
-  type: 'free_hour' | 'discount_percent' | 'discount_amount';
+  type: 'free_hour' | 'discount_percent' | 'discount_amount' | 'birthday_reward';
   value: number;
   description: string;
   created_at: string;
