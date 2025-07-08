@@ -125,7 +125,10 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                     </FormControl>
                     <SelectContent>
                       {customers.length > 0 ? customers.map(customer => (
-                        <SelectItem key={customer.id} value={customer.id}>{customer.full_name} ({customer.phone_number})</SelectItem>
+                        <SelectItem key={customer.id} value={customer.id} disabled={customer.isActive}>
+                          {customer.full_name} ({customer.phone_number})
+                          {customer.isActive && <span className="text-muted-foreground ml-2">(In Session)</span>}
+                        </SelectItem>
                       )) : <SelectItem value="no-customers" disabled>No customers available</SelectItem>}
                     </SelectContent>
                   </Select>
@@ -148,8 +151,11 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {customers.filter(c => c.id !== primaryCustomerId).map(customer => (
-                          <SelectItem key={customer.id} value={customer.id}>{customer.full_name} ({customer.phone_number})</SelectItem>
+                        {customers.map(customer => (
+                          <SelectItem key={customer.id} value={customer.id} disabled={customer.isActive || customer.id === primaryCustomerId}>
+                             {customer.full_name} ({customer.phone_number})
+                             {customer.isActive && <span className="text-muted-foreground ml-2">(In Session)</span>}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

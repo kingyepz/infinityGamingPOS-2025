@@ -29,10 +29,35 @@ type AddCustomerPayload = Omit<CustomerFormData, 'loyalty_points' | 'loyalty_tie
 // Define functions to interact with Supabase
 const fetchCustomers = async (): Promise<Customer[]> => {
   const supabase = createClient();
-  const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
-  if (error) throw new Error(error.message);
-  return data;
+  
+  // 1. Fetch all customers
+  const { data: customersData, error: customersError } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+  if (customersError) throw new Error(customersError.message);
+
+  // 2. Fetch all active sessions
+  const { data: activeSessions, error: sessionsError } = await supabase
+    .from('sessions')
+    .select('customer_id, secondary_customer_id')
+    .eq('payment_status', 'pending');
+  if (sessionsError) {
+      console.warn("Could not fetch active sessions to determine customer status.");
+      return customersData.map(c => ({...c, isActive: false }));
+  }
+  
+  // 3. Create a set of active customer IDs
+  const activeCustomerIds = new Set<string>();
+  activeSessions.forEach(s => {
+    if (s.customer_id) activeCustomerIds.add(s.customer_id);
+    if (s.secondary_customer_id) activeCustomerIds.add(s.secondary_customer_id);
+  });
+
+  // 4. Map and enrich customer data
+  return customersData.map(customer => ({
+    ...customer,
+    isActive: activeCustomerIds.has(customer.id),
+  }));
 };
+
 
 const addCustomer = async (customer: AddCustomerPayload) => {
   const supabase = createClient();
@@ -135,6 +160,14 @@ export default function CustomersPage() {
 
 
   const handleDeleteCustomer = (customer: Customer) => {
+    if (customer.isActive) {
+        toast({
+            title: "Action Prohibited",
+            description: "Cannot delete a customer who is in an active game session.",
+            variant: "destructive",
+        });
+        return;
+    }
     setCustomerToDelete(customer);
   };
   

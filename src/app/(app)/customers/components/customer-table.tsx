@@ -48,6 +48,7 @@ export default function CustomerTable({ customers, onDelete }: CustomerTableProp
         <TableHeader>
           <TableRow>
             <TableHead className="whitespace-nowrap">Name</TableHead>
+            <TableHead className="whitespace-nowrap">Status</TableHead>
             <TableHead className="whitespace-nowrap">Phone</TableHead>
             <TableHead className="whitespace-nowrap">Email</TableHead>
             <TableHead className="whitespace-nowrap">Birthday</TableHead>
@@ -61,6 +62,13 @@ export default function CustomerTable({ customers, onDelete }: CustomerTableProp
           {customers.map((customer) => (
             <TableRow key={customer.id}>
               <TableCell className="font-medium whitespace-nowrap">{customer.full_name}</TableCell>
+              <TableCell>
+                {customer.isActive ? (
+                  <Badge variant="outline" className="text-green-500 border-green-500 bg-green-500/10">Active</Badge>
+                ) : (
+                  <Badge variant="secondary">Idle</Badge>
+                )}
+              </TableCell>
               <TableCell className="whitespace-nowrap">{customer.phone_number}</TableCell>
               <TableCell className="whitespace-nowrap">{customer.email}</TableCell>
               <TableCell className="whitespace-nowrap">

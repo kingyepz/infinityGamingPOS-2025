@@ -20,10 +20,35 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 // --- Data Fetching Functions ---
 const fetchCustomers = async (): Promise<Customer[]> => {
   const supabase = createClient();
-  const { data, error } = await supabase.from('customers').select('*').order('full_name');
-  if (error) throw new Error(error.message);
-  return data;
+  
+  // 1. Fetch all customers
+  const { data: customersData, error: customersError } = await supabase.from('customers').select('*').order('full_name');
+  if (customersError) throw new Error(customersError.message);
+
+  // 2. Fetch all active sessions
+  const { data: activeSessions, error: sessionsError } = await supabase
+    .from('sessions')
+    .select('customer_id, secondary_customer_id')
+    .eq('payment_status', 'pending');
+  if (sessionsError) {
+      console.warn("Could not fetch active sessions to determine customer status.");
+      return customersData.map(c => ({...c, isActive: false }));
+  }
+  
+  // 3. Create a set of active customer IDs
+  const activeCustomerIds = new Set<string>();
+  activeSessions.forEach(s => {
+    if (s.customer_id) activeCustomerIds.add(s.customer_id);
+    if (s.secondary_customer_id) activeCustomerIds.add(s.secondary_customer_id);
+  });
+
+  // 4. Map and enrich customer data
+  return customersData.map(customer => ({
+    ...customer,
+    isActive: activeCustomerIds.has(customer.id),
+  }));
 };
+
 
 const fetchStations = async (): Promise<Station[]> => {
   const supabase = createClient();
@@ -124,6 +149,7 @@ export default function SessionsPage() {
         
         queryClient.invalidateQueries({ queryKey: ['activeSessions'] });
         queryClient.invalidateQueries({ queryKey: ['stations'] });
+        queryClient.invalidateQueries({ queryKey: ['customers'] });
         setIsStartSessionDialogOpen(false);
         toast({ title: "Session Started", description: `A new session has started successfully.` });
     },
