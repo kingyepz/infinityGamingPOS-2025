@@ -128,7 +128,7 @@ export default function CustomerDetailPage() {
     }
 
     if (isErrorCustomer) {
-        return <p className="text-center text-destructive py-8">Error loading customer: {customerError.message}</p>
+        return <p className="text-center text-destructive py-8">Error loading customer: {customerError?.message}</p>
     }
     
     if (!customer) {
@@ -176,7 +176,7 @@ export default function CustomerDetailPage() {
             </Card>
 
             {isErrorTransactions ? (
-                <p className="text-center text-destructive py-8">Error loading transactions: {transactionError.message}</p>
+                <p className="text-center text-destructive py-8">Error loading transactions: {transactionError?.message}</p>
             ) : (
                 <TransactionHistoryTable transactions={transactions || []} />
             )}
