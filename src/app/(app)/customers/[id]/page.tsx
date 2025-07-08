@@ -39,8 +39,21 @@ const updateCustomer = async (customer: Pick<Customer, 'id' | 'full_name' | 'pho
       ...updateData,
       dob: updateData.dob ? updateData.dob.toISOString().split('T')[0] : null
   };
-  const { error } = await supabase.from('customers').update(payload).eq('id', id);
-  if (error) throw new Error(error.message);
+  
+  // Add count: 'exact' to get the number of updated rows
+  const { error, count } = await supabase.from('customers').update(payload, { count: 'exact' }).eq('id', id);
+
+  if (error) {
+    // If there's a database error, throw it
+    throw new Error(error.message);
+  }
+
+  if (count === 0) {
+    // If no rows were updated, it's likely an RLS issue or the record was deleted.
+    // Throw a more specific error to guide the user.
+    throw new Error("Update failed. The record may not exist or you may not have permission to modify it. Please check your database's Row Level Security (RLS) policies for the 'customers' table.");
+  }
+  
   return null;
 };
 
