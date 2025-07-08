@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ArrowDownLeft, ArrowUpRight, Award, Gift } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Info } from 'lucide-react';
 
 interface TransactionHistoryTableProps {
   transactions: LoyaltyTransaction[];
@@ -40,7 +41,11 @@ export default function TransactionHistoryTable({ transactions }: TransactionHis
                 <CardDescription>A complete log of all loyalty point activities for this customer.</CardDescription>
             </CardHeader>
             <CardContent>
-                 <p className="text-center text-muted-foreground py-8">No loyalty transactions recorded yet.</p>
+                 <div className="text-center text-muted-foreground py-8 px-4 bg-muted/50 rounded-lg">
+                    <Info className="mx-auto h-8 w-8 text-muted-foreground/70 mb-2" />
+                    <p className="font-semibold">No loyalty transactions recorded yet.</p>
+                    <p className="text-sm">Points for sign-up bonuses, birthday rewards, and completed sessions will appear here.</p>
+                 </div>
             </CardContent>
         </Card>
     )
