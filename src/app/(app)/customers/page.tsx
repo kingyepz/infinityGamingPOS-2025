@@ -41,7 +41,7 @@ const addCustomer = async (customer: AddCustomerPayload) => {
     dob: customer.dob ? customer.dob.toISOString().split('T')[0] : null,
   }
 
-  // Step 1: Insert the customer without any points. The default is 0.
+  // Step 1: Insert the customer. The default points are 0.
   const { data: newCustomer, error: customerError } = await supabase
     .from('customers')
     .insert([insertPayload])
@@ -62,13 +62,12 @@ const addCustomer = async (customer: AddCustomerPayload) => {
     }]);
     
   if (transactionError) {
-    // Non-critical error: The customer was created, but points failed.
-    // We can still return the customer but should log this and perhaps notify the user.
+    // We now handle this in the mutation's onSuccess to provide user feedback.
     console.error("Failed to add bonus points transaction:", transactionError.message);
-    // This could be a good place for a specific toast message.
   }
   
-  return newCustomer;
+  // Return the customer and a flag indicating if the bonus was awarded
+  return { newCustomer, bonusAwarded: !transactionError };
 };
 
 const deleteCustomer = async (customerId: string) => {
@@ -91,10 +90,20 @@ export default function CustomersPage() {
 
   const addMutation = useMutation({
     mutationFn: addCustomer,
-    onSuccess: () => {
+    onSuccess: ({ newCustomer, bonusAwarded }) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['customers-loyalty'] }); // Invalidate loyalty page data
-      toast({ title: "Customer Added", description: "The new customer has been registered and awarded 50 bonus points." });
+      queryClient.invalidateQueries({ queryKey: ['customers-loyalty'] });
+      
+      if (bonusAwarded) {
+          toast({ title: "Customer Added", description: "The new customer has been registered and awarded 50 bonus points." });
+      } else {
+          toast({
+              title: "Customer Added (Action Required)",
+              description: "Customer created, but bonus points failed. Check DB permissions or add points manually.",
+              variant: "destructive",
+              duration: 10000,
+          });
+      }
       setIsAddFormOpen(false);
     },
     onError: (err: Error) => {
