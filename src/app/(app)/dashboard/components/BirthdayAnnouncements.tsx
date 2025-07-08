@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Cake, Gift } from 'lucide-react';
+import { Cake, Gift, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 interface BirthdayCustomer {
     id: string;
@@ -16,6 +18,10 @@ interface BirthdayCustomer {
     dob?: string;
     // For upcoming birthdays, `next_birthday_date` is present.
     next_birthday_date?: string;
+    offer?: {
+      id: string;
+      description: string;
+    } | null;
 }
 
 const fetchBirthdayCustomers = async (): Promise<{ today: BirthdayCustomer[], upcoming: BirthdayCustomer[] }> => {
@@ -43,17 +49,14 @@ const fetchBirthdayCustomers = async (): Promise<{ today: BirthdayCustomer[], up
 };
 
 export function BirthdayAnnouncements() {
-    const { data, isLoading, isError, error } = useQuery<{ today: BirthdayCustomer[], upcoming: BirthdayCustomer[] }>({
+    const { data, isLoading, isError, error, refetch } = useQuery<{ today: BirthdayCustomer[], upcoming: BirthdayCustomer[] }>({
         queryKey: ['birthdayCustomers'],
         queryFn: fetchBirthdayCustomers,
-        refetchInterval: 60 * 60 * 1000, // Refetch every hour
+        refetchOnWindowFocus: true,
     });
 
-    // This new function is more robust against timezone issues.
-    // It correctly parses a "YYYY-MM-DD" string as a local date.
     const formatUpcomingDate = (dateString: string) => {
         const [year, month, day] = dateString.split('-').map(Number);
-        // Month is 0-indexed for JavaScript's Date constructor.
         const date = new Date(year, month - 1, day);
         return format(date, 'MMMM do');
     }
@@ -89,9 +92,20 @@ export function BirthdayAnnouncements() {
                                 Today's Birthdays
                             </h4>
                             {data?.today && data.today.length > 0 ? (
-                                <ul className="space-y-1 pl-6">
+                                <ul className="space-y-2 pl-1">
                                     {data.today.map(customer => (
-                                        <li key={customer.id} className="text-sm text-foreground/90 list-disc">{customer.full_name}</li>
+                                        <li key={customer.id} className="text-sm flex flex-col items-start gap-1 p-2 rounded-md bg-muted/50">
+                                            <span className="font-medium text-foreground/90">{customer.full_name}</span>
+                                            {customer.offer ? (
+                                                <Button asChild size="sm" variant="outline" className="h-7 bg-green-500/10 border-green-500/50 text-green-700 hover:bg-green-500/20 hover:text-green-800">
+                                                  <Link href={`/sessions?customerId=${customer.id}&offerId=${customer.offer.id}`}>
+                                                    <Sparkles className="h-3 w-3 mr-1.5" /> Redeem Free Session
+                                                  </Link>
+                                                </Button>
+                                            ) : (
+                                                 <span className="text-xs text-muted-foreground italic">Reward already claimed.</span>
+                                            )}
+                                        </li>
                                     ))}
                                 </ul>
                             ) : (

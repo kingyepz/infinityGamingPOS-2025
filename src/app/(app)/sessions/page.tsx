@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { Session, Customer, Station, Game, LoyaltyTransaction } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Gamepad2, Loader2 } from 'lucide-react';
@@ -111,12 +112,15 @@ const fetchActiveSessions = async (): Promise<Session[]> => {
 export default function SessionsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [isStartSessionDialogOpen, setIsStartSessionDialogOpen] = useState(false);
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   const [sessionForReceipt, setSessionForReceipt] = useState<Session | null>(null);
   const [sessionToCancel, setSessionToCancel] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [birthdaySessionInfo, setBirthdaySessionInfo] = useState<{ customerId: string, offerId: string } | null>(null);
 
   // --- React Query Hooks ---
   const { data: customers, isLoading: isLoadingCustomers } = useQuery<Customer[]>({
@@ -139,6 +143,19 @@ export default function SessionsPage() {
       queryFn: fetchActiveSessions,
       refetchInterval: 30000,
   });
+
+  useEffect(() => {
+    const customerId = searchParams.get('customerId');
+    const offerId = searchParams.get('offerId');
+
+    if (customerId && offerId) {
+        setBirthdaySessionInfo({ customerId, offerId });
+        setIsStartSessionDialogOpen(true);
+        // Clean up URL to prevent re-triggering on refresh
+        router.replace('/sessions', { scroll: false });
+    }
+  }, [searchParams, router]);
+
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -176,6 +193,7 @@ export default function SessionsPage() {
         queryClient.invalidateQueries({ queryKey: ['stations'] });
         queryClient.invalidateQueries({ queryKey: ['customers'] });
         setIsStartSessionDialogOpen(false);
+        setBirthdaySessionInfo(null);
         toast({ title: "Session Started", description: `A new session has started successfully.` });
     },
     onError: (err: Error) => {
@@ -188,31 +206,23 @@ export default function SessionsPage() {
         const { paidSession } = params;
         const supabase = createClient();
         
-        // Get current user to set as recorder
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("You must be logged in to process payments.");
 
-        // NEW: Secure, server-side check for duplicate MPesa reference via RPC
         if (paidSession.payment_method === 'mpesa' && paidSession.mpesa_reference) {
             const referencesToCheck = paidSession.mpesa_reference.split(',').map(ref => ref.trim().toUpperCase()).filter(Boolean);
-            
             for (const ref of referencesToCheck) {
                 if (!ref) continue;
-                // Call the database function
                 const { data: exists, error: rpcError } = await supabase.rpc('check_mpesa_ref_exists', { ref_code: ref });
-
                 if (rpcError) {
-                    // This could be because the function doesn't exist.
                     throw new Error(`Database error checking reference: ${rpcError.message}. Ensure the 'check_mpesa_ref_exists' function is created.`);
                 }
-
                 if (exists === true) {
                     throw new Error(`MPesa reference "${ref}" has already been used.`);
                 }
             }
         }
     
-        // If the check passes, proceed with updating the session
         const { error } = await supabase
             .from('sessions')
             .update({
@@ -222,12 +232,25 @@ export default function SessionsPage() {
                 points_earned: paidSession.points_earned,
                 payment_status: 'paid',
                 payment_method: paidSession.payment_method,
-                // Normalize to uppercase and comma-space separated for consistency
                 mpesa_reference: paidSession.mpesa_reference ? paidSession.mpesa_reference.split(',').map(ref => ref.trim().toUpperCase()).filter(Boolean).join(', ') : undefined,
-                recorded_by: user.id, // Record which user processed the payment
+                recorded_by: user.id,
             })
             .eq('id', paidSession.id);
         if (error) throw new Error(`Could not update session: ${error.message}`);
+        
+        // After session is paid, mark the offer as used
+        if (paidSession.offer_id) {
+            const { error: offerError } = await supabase
+                .from('customer_offers')
+                .update({ is_used: true, used_at: new Date().toISOString(), session_id: paidSession.id })
+                .eq('id', paidSession.offer_id);
+            if (offerError) {
+                // Not critical, but log it and notify admin.
+                console.error("Failed to mark offer as used:", offerError);
+                toast({ title: "Offer Update Warning", description: `Session paid, but failed to mark offer ${paidSession.offer_id} as used. Please check manually.`, variant: "destructive", duration: 10000 });
+            }
+        }
+        
         return params;
     },
     onSuccess: async ({ paidSession, payer }) => {
@@ -266,6 +289,7 @@ export default function SessionsPage() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       queryClient.invalidateQueries({ queryKey: ['customers-loyalty'] });
+      queryClient.invalidateQueries({ queryKey: ['birthdayCustomers']}); // To update redeemed offers
       
       setSessionToEnd(null);
       setSessionForReceipt(paidSession);
@@ -322,8 +346,6 @@ export default function SessionsPage() {
             customerIdsToCheck.push(formData.secondaryCustomerId);
         }
 
-        // Final real-time check to prevent double-booking.
-        // This query now uses explicit aliases to avoid conflicts.
         const { data: activeCustomerSessions, error: checkError } = await supabase
             .from('sessions')
             .select('customer_id, secondary_customer_id, customer:customers!customer_id(full_name), secondary_customer:customers!secondary_customer_id(full_name)')
@@ -349,7 +371,6 @@ export default function SessionsPage() {
             }
         }
 
-        // If validation passes, proceed.
         const newSessionPayload: Partial<Session> = {
             customer_id: formData.customerId,
             station_id: formData.stationId,
@@ -359,6 +380,7 @@ export default function SessionsPage() {
             amount_charged: formData.rate,
             payment_status: 'pending' as const,
             secondary_customer_id: formData.secondaryCustomerId || null,
+            offer_id: formData.offerId || null,
         };
         
         submittingToast.dismiss();
@@ -379,14 +401,19 @@ export default function SessionsPage() {
     const durationMinutes = differenceInMinutes(endTime, new Date(session.start_time));
     
     let finalAmountCharged = 0;
-    if (session.session_type === 'per-hour') {
-      const hours = Math.max(1, Math.ceil(durationMinutes / 60));
-      finalAmountCharged = hours * (session.amount_charged || 0);
-    } else {
-      finalAmountCharged = session.amount_charged || 0;
+    // For free sessions (like birthday offers), the amount is 0.
+    if (session.rate > 0) {
+        if (session.session_type === 'per-hour') {
+          const hours = Math.max(1, Math.ceil(durationMinutes / 60));
+          finalAmountCharged = hours * (session.amount_charged || 0);
+        } else {
+          finalAmountCharged = session.amount_charged || 0;
+        }
     }
 
-    const points_earned = Math.floor(finalAmountCharged * POINTS_PER_CURRENCY_UNIT);
+    const points_earned = session.rate > 0 
+      ? Math.floor(finalAmountCharged * POINTS_PER_CURRENCY_UNIT)
+      : 0; // No points for free sessions
 
     setSessionToEnd({ 
       ...session, 
@@ -404,6 +431,11 @@ export default function SessionsPage() {
   
   const handleCancelSession = (session: Session) => {
     setSessionToCancel(session);
+  };
+  
+  const handleCloseDialog = () => {
+    setIsStartSessionDialogOpen(false);
+    setBirthdaySessionInfo(null);
   };
   
   const isLoading = isLoadingCustomers || isLoadingStations || isLoadingSessions || isLoadingGames;
@@ -457,12 +489,13 @@ export default function SessionsPage() {
 
       <StartSessionDialog
         isOpen={isStartSessionDialogOpen}
-        onClose={() => setIsStartSessionDialogOpen(false)}
+        onClose={handleCloseDialog}
         onSubmit={handleStartSession}
         customers={customers || []}
         stations={availableStations}
         games={games || []}
         isSubmitting={startSessionMutation.isPending}
+        birthdaySessionInfo={birthdaySessionInfo}
       />
 
       {sessionToEnd && (

@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
-import { Loader2, UserPlus, X } from 'lucide-react';
+import { Loader2, UserPlus, X, Sparkles } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 const sessionFormSchema = z.object({
@@ -43,6 +43,7 @@ const sessionFormSchema = z.object({
   gameId: z.string().min(1, "Game is required."),
   sessionType: z.enum(['per-hour', 'per-game'], { required_error: "Billing type is required." }),
   rate: z.coerce.number().min(0, "Rate must be a non-negative number.").max(10000, "Rate seems too high."),
+  offerId: z.string().optional(), // To track the birthday offer
 }).refine(data => {
     if (data.secondaryCustomerId) {
         return data.customerId !== data.secondaryCustomerId;
@@ -63,10 +64,12 @@ interface StartSessionDialogProps {
   stations: Station[];
   games: Game[];
   isSubmitting: boolean;
+  birthdaySessionInfo?: { customerId: string, offerId: string } | null;
 }
 
-export default function StartSessionDialog({ isOpen, onClose, onSubmit, customers, stations, games, isSubmitting }: StartSessionDialogProps) {
+export default function StartSessionDialog({ isOpen, onClose, onSubmit, customers, stations, games, isSubmitting, birthdaySessionInfo }: StartSessionDialogProps) {
   const [showSecondPlayer, setShowSecondPlayer] = useState(false);
+  const isBirthdayMode = !!birthdaySessionInfo;
   
   const form = useForm<SessionFormData>({
     resolver: zodResolver(sessionFormSchema),
@@ -77,25 +80,41 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
       gameId: "",
       sessionType: "per-hour",
       rate: 200,
+      offerId: "",
     },
   });
+  
+  // Set form values when birthday mode is triggered
+  useEffect(() => {
+    if (isBirthdayMode) {
+        form.reset({
+            customerId: birthdaySessionInfo.customerId,
+            offerId: birthdaySessionInfo.offerId,
+            sessionType: 'per-game',
+            rate: 0,
+            secondaryCustomerId: "",
+            stationId: "",
+            gameId: "",
+        });
+        setShowSecondPlayer(false);
+    }
+  }, [birthdaySessionInfo, isBirthdayMode, form]);
+
 
   const selectedStationId = form.watch("stationId");
   const primaryCustomerId = form.watch("customerId");
 
   const compatibleGames = useMemo(() => {
     if (!selectedStationId) {
-      return []; // No station selected, so no games are compatible yet.
+      return []; 
     }
     const selectedStation = stations.find(s => s.id === selectedStationId);
     if (!selectedStation || !selectedStation.type) {
       return [];
     }
-    // Filter games where the game's platform array includes the station's type.
     return games.filter(game => Array.isArray(game.platforms) && game.platforms.includes(selectedStation.type));
   }, [selectedStationId, stations, games]);
 
-  // Effect to reset game selection if station changes and game is no longer compatible.
   useEffect(() => {
     const selectedGameId = form.getValues("gameId");
     if (selectedGameId) {
@@ -108,7 +127,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
 
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isBirthdayMode) {
       form.reset({
         customerId: "",
         secondaryCustomerId: "",
@@ -116,10 +135,11 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
         gameId: "",
         sessionType: "per-hour",
         rate: 200, 
+        offerId: "",
       });
       setShowSecondPlayer(false);
     }
-  }, [isOpen, form]);
+  }, [isOpen, form, isBirthdayMode]);
 
   const handleSubmit = (data: SessionFormData) => {
     onSubmit(data);
@@ -131,8 +151,13 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
     }}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Start New Game Session</DialogTitle>
-          <DialogDescription>Select customer, station, game, and billing details.</DialogDescription>
+          <DialogTitle>{isBirthdayMode ? "Redeem Birthday Session" : "Start New Game Session"}</DialogTitle>
+          <DialogDescription>
+            {isBirthdayMode 
+                ? `Redeeming a free game session for ${customers.find(c=>c.id === birthdaySessionInfo.customerId)?.full_name}.`
+                : "Select customer, station, game, and billing details."
+            }
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
@@ -142,7 +167,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Primary Customer</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || isBirthdayMode}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a customer" />
@@ -169,7 +194,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Second Customer (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select second player" />
@@ -211,7 +236,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Game Station</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a station" />
@@ -264,7 +289,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Billing Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting || isBirthdayMode}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select billing type" />
@@ -284,9 +309,12 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
                 name="rate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Rate ({CURRENCY_SYMBOL})</FormLabel>
+                    <FormLabel>
+                      {isBirthdayMode && <Sparkles className="h-3 w-3 mr-1.5 inline-block text-yellow-500"/>}
+                      Rate ({CURRENCY_SYMBOL})
+                    </FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g. 200" {...field} step="10" disabled={isSubmitting} />
+                      <Input type="number" placeholder="e.g. 200" {...field} step="10" disabled={isSubmitting || isBirthdayMode} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -297,7 +325,7 @@ export default function StartSessionDialog({ isOpen, onClose, onSubmit, customer
               <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Start Session
+                {isBirthdayMode ? "Redeem & Start" : "Start Session"}
               </Button>
             </DialogFooter>
           </form>

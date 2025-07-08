@@ -65,6 +65,7 @@ export interface Session {
   payment_method?: 'cash' | 'mpesa' | null; // Assumed to exist in DB
   mpesa_reference?: string | null; // Assumed to exist in DB
   recorded_by?: string | null; // uuid of user who processed payment
+  offer_id?: string | null; // uuid of the offer used for this session
   
   // Client-side fields for UI display, state management, and calculations
   customerName: string; // Fetched via join or lookup
