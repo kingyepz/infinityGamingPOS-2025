@@ -39,7 +39,9 @@ const updateCustomer = async (customer: { id: string; full_name: string; phone_n
     full_name: customer.full_name,
     phone_number: customer.phone_number,
     email: customer.email,
-    dob: customer.dob ? format(customer.dob, 'yyyy-MM-dd') : null,
+    // Correctly format the date to YYYY-MM-DD, ignoring timezone conversions.
+    // This creates a UTC date with the same Y-M-D as the local date, then extracts the date part.
+    dob: customer.dob ? new Date(customer.dob.getTime() - (customer.dob.getTimezoneOffset() * 60000)).toISOString().split('T')[0] : null,
   };
 
   const { error, count } = await supabase
