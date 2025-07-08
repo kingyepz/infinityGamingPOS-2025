@@ -289,37 +289,36 @@ export default function SessionsPage() {
 
     try {
         const supabase = createClient();
-        const customerIdsToCkeck = [formData.customerId];
+        const customerIdsToCheck = [formData.customerId];
         if (formData.secondaryCustomerId) {
-            customerIdsToCkeck.push(formData.secondaryCustomerId);
+            customerIdsToCheck.push(formData.secondaryCustomerId);
         }
 
-        // Final real-time check to prevent double-booking
+        // Final real-time check to prevent double-booking.
+        // This query now uses explicit aliases to avoid conflicts.
         const { data: activeCustomerSessions, error: checkError } = await supabase
             .from('sessions')
-            .select('customer_id, secondary_customer_id, customers!customer_id(full_name), customers!secondary_customer_id(full_name)')
+            .select('customer_id, secondary_customer_id, customer:customers!customer_id(full_name), secondary_customer:customers!secondary_customer_id(full_name)')
             .eq('payment_status', 'pending')
-            .or(`customer_id.in.(${customerIdsToCkeck.join(',')}),secondary_customer_id.in.(${customerIdsToCkeck.join(',')})`);
+            .or(`customer_id.in.(${customerIdsToCheck.join(',')}),secondary_customer_id.in.(${customerIdsToCheck.join(',')})`);
         
         if (checkError) throw new Error(`DB Error: ${checkError.message}`);
 
         if (activeCustomerSessions && activeCustomerSessions.length > 0) {
             const activeCustomers = new Set<string>();
             activeCustomerSessions.forEach((session: any) => {
-                // Find which of the selected customers are in the returned active sessions
-                if (customerIdsToCkeck.includes(session.customer_id)) {
-                    activeCustomers.add(session.customers.full_name);
+                if (session.customer && customerIdsToCheck.includes(session.customer_id)) {
+                    activeCustomers.add(session.customer.full_name);
                 }
-                if (session.secondary_customer_id && customerIdsToCkeck.includes(session.secondary_customer_id)) {
-                    // Need a better way to get the name for secondary customer if the join name is ambiguous
-                    // For now, this is a simplified example.
-                    const secondaryCustomer = customers?.find(c => c.id === session.secondary_customer_id);
-                    if (secondaryCustomer) activeCustomers.add(secondaryCustomer.full_name);
+                if (session.secondary_customer && customerIdsToCheck.includes(session.secondary_customer_id)) {
+                    activeCustomers.add(session.secondary_customer.full_name);
                 }
             });
-
-            const customerList = Array.from(activeCustomers).join(' & ');
-            throw new Error(`${customerList} is already in an active session.`);
+            
+            if (activeCustomers.size > 0) {
+                const customerList = Array.from(activeCustomers).join(' & ');
+                throw new Error(`${customerList} is already in an active session.`);
+            }
         }
 
         // If validation passes, proceed.
