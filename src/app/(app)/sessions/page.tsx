@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Session, Customer, Station, Game, LoyaltyTransaction } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -16,16 +16,24 @@ import { differenceInMinutes } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // --- Data Fetching Functions ---
 const fetchCustomers = async (): Promise<Customer[]> => {
   const supabase = createClient();
   
-  // 1. Fetch all customers
   const { data: customersData, error: customersError } = await supabase.from('customers').select('*').order('full_name');
   if (customersError) throw new Error(customersError.message);
 
-  // 2. Fetch all active sessions
   const { data: activeSessions, error: sessionsError } = await supabase
     .from('sessions')
     .select('customer_id, secondary_customer_id')
@@ -35,14 +43,12 @@ const fetchCustomers = async (): Promise<Customer[]> => {
       return customersData.map(c => ({...c, isActive: false }));
   }
   
-  // 3. Create a set of active customer IDs
   const activeCustomerIds = new Set<string>();
   activeSessions.forEach(s => {
     if (s.customer_id) activeCustomerIds.add(s.customer_id);
     if (s.secondary_customer_id) activeCustomerIds.add(s.secondary_customer_id);
   });
 
-  // 4. Map and enrich customer data
   return customersData.map(customer => ({
     ...customer,
     isActive: activeCustomerIds.has(customer.id),
@@ -82,7 +88,6 @@ const fetchActiveSessions = async (): Promise<Session[]> => {
 
     if (error) throw new Error(error.message);
     
-    // Process data to match the Session type with nested customer/station names
     return data.map(s => ({
         ...s,
         id: s.id,
@@ -110,6 +115,8 @@ export default function SessionsPage() {
   const [isStartSessionDialogOpen, setIsStartSessionDialogOpen] = useState(false);
   const [sessionToEnd, setSessionToEnd] = useState<Session | null>(null);
   const [sessionForReceipt, setSessionForReceipt] = useState<Session | null>(null);
+  const [sessionToCancel, setSessionToCancel] = useState<Session | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   // --- React Query Hooks ---
   const { data: customers, isLoading: isLoadingCustomers } = useQuery<Customer[]>({
@@ -132,6 +139,24 @@ export default function SessionsPage() {
       queryFn: fetchActiveSessions,
       refetchInterval: 30000,
   });
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        if (userData) {
+          setUserRole(userData.role);
+        }
+      }
+    };
+    fetchUserRole();
+  }, []);
   
   const availableStations = stations?.filter(s => s.status === 'available') || [];
 
@@ -223,6 +248,37 @@ export default function SessionsPage() {
     }
   });
 
+  const cancelSessionMutation = useMutation({
+    mutationFn: async (session: Session) => {
+        const supabase = createClient();
+        const { error: sessionError } = await supabase
+            .from('sessions')
+            .update({ payment_status: 'cancelled', end_time: new Date().toISOString() })
+            .eq('id', session.id);
+        if (sessionError) throw new Error(`Could not cancel session: ${sessionError.message}`);
+
+        const { error: stationError } = await supabase
+            .from('stations')
+            .update({ status: 'available' })
+            .eq('id', session.station_id);
+        if (stationError) {
+            console.warn(`Failed to update station status for ${session.station_id}: ${stationError.message}`);
+        }
+        return session;
+    },
+    onSuccess: (cancelledSession) => {
+        queryClient.invalidateQueries({ queryKey: ['activeSessions'] });
+        queryClient.invalidateQueries({ queryKey: ['stations'] });
+        queryClient.invalidateQueries({ queryKey: ['customers'] });
+        setSessionToCancel(null);
+        toast({ title: "Session Force-Cancelled", description: `Session on ${cancelledSession.stationName} has been cancelled.` });
+    },
+    onError: (err: Error) => {
+        toast({ title: "Error", description: err.message, variant: "destructive" });
+        setSessionToCancel(null);
+    }
+  });
+
 
   // --- Event Handlers ---
   const handleStartSession = (formData: SessionFormData) => {
@@ -232,7 +288,7 @@ export default function SessionsPage() {
       game_id: formData.gameId,
       session_type: formData.sessionType,
       start_time: new Date().toISOString(),
-      amount_charged: formData.rate, // Use amount_charged to store rate initially
+      amount_charged: formData.rate,
       payment_status: 'pending' as const,
       secondary_customer_id: formData.secondaryCustomerId || null,
     };
@@ -258,13 +314,17 @@ export default function SessionsPage() {
       end_time: endTime.toISOString(), 
       duration_minutes: durationMinutes,
       amount_charged: finalAmountCharged,
-      rate: session.amount_charged || 0, // Preserve original rate for display
+      rate: session.amount_charged || 0,
       points_earned: points_earned
     });
   };
 
   const handleProcessPayment = (paidSession: Session, payer: Payer) => {
     endSessionMutation.mutate({ paidSession, payer });
+  };
+  
+  const handleCancelSession = (session: Session) => {
+    setSessionToCancel(session);
   };
   
   const isLoading = isLoadingCustomers || isLoadingStations || isLoadingSessions || isLoadingGames;
@@ -298,7 +358,13 @@ export default function SessionsPage() {
       {!isLoading && activeSessions && activeSessions.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {activeSessions.map(session => (
-            <ActiveSessionCard key={session.id} session={session} onEndSession={handleOpenEndSessionDialog} />
+            <ActiveSessionCard 
+                key={session.id} 
+                session={session} 
+                onEndSession={handleOpenEndSessionDialog} 
+                onCancelSession={handleCancelSession}
+                userRole={userRole}
+            />
           ))}
         </div>
       ) : !isLoading && (
@@ -335,6 +401,30 @@ export default function SessionsPage() {
           onClose={() => setSessionForReceipt(null)}
           session={sessionForReceipt}
         />
+      )}
+      
+      {sessionToCancel && (
+        <AlertDialog open={!!sessionToCancel} onOpenChange={() => setSessionToCancel(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to force-end this session?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action is for stuck sessions and cannot be undone. It will mark the session as 'cancelled' and will not generate a bill or award loyalty points.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={cancelSessionMutation.isPending}>Go Back</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => cancelSessionMutation.mutate(sessionToCancel)} 
+                className="bg-destructive hover:bg-destructive/90" 
+                disabled={cancelSessionMutation.isPending}
+              >
+                {cancelSessionMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Confirm Cancellation
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );

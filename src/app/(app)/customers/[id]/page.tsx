@@ -7,7 +7,7 @@ import type { Customer, LoyaltyTransaction } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 import { useParams, useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Edit, Mail, Phone, User, Star, Cake } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, User, Star, Cake, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import TransactionHistoryTable from './components/transaction-history-table';
@@ -31,6 +31,28 @@ const fetchTransactionHistory = async (customerId: string): Promise<LoyaltyTrans
     if (error) throw new Error(error.message);
     return data;
 };
+
+const fetchSessionStats = async (customerId: string): Promise<{ solo: number; coop: number }> => {
+    const supabase = createClient();
+    // Fetch sessions where the customer is either the primary or secondary player.
+    const { data, error } = await supabase
+        .from('sessions')
+        .select('id, customer_id, secondary_customer_id')
+        .or(`customer_id.eq.${customerId},secondary_customer_id.eq.${customerId}`);
+
+    if (error) {
+        console.error("Error fetching session stats:", error);
+        throw new Error(error.message);
+    }
+    
+    // Solo sessions are where this customer is the primary player and there's no secondary.
+    const solo = data.filter(s => s.customer_id === customerId && !s.secondary_customer_id).length;
+    // Co-op sessions are any sessions with a secondary player.
+    const coop = data.filter(s => !!s.secondary_customer_id).length;
+
+    return { solo, coop };
+};
+
 
 const updateCustomer = async (customer: { id: string; full_name: string; phone_number: string; email: string; dob?: Date | null }) => {
   const supabase = createClient();
@@ -100,6 +122,12 @@ export default function CustomerDetailPage() {
         queryFn: () => fetchTransactionHistory(customerId),
         enabled: !!customerId,
     });
+    
+    const { data: sessionStats, isLoading: isLoadingStats } = useQuery({
+        queryKey: ['sessionStats', customerId],
+        queryFn: () => fetchSessionStats(customerId),
+        enabled: !!customerId,
+    });
 
     const updateMutation = useMutation({
         mutationFn: updateCustomer,
@@ -125,7 +153,7 @@ export default function CustomerDetailPage() {
         });
     };
 
-    if (isLoadingCustomer || isLoadingTransactions) {
+    if (isLoadingCustomer || isLoadingTransactions || isLoadingStats) {
         return (
             <div className="space-y-6">
                  <Skeleton className="h-10 w-48" />
@@ -135,6 +163,7 @@ export default function CustomerDetailPage() {
                         <Skeleton className="h-5 w-3/4" />
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <Skeleton className="h-6 w-full" />
                         <Skeleton className="h-6 w-full" />
                         <Skeleton className="h-6 w-full" />
                     </CardContent>
@@ -190,7 +219,7 @@ export default function CustomerDetailPage() {
                         Edit Customer
                     </Button>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
                     <div className="flex items-center gap-3">
                         <Mail className="h-5 w-5 text-muted-foreground" />
                         <a href={`mailto:${customer.email}`} className="text-primary hover:underline">{customer.email}</a>
@@ -209,6 +238,14 @@ export default function CustomerDetailPage() {
                         <Badge variant="outline" className={cn("capitalize", getTierClassName(customer.loyalty_tier))}>
                             {customer.loyalty_tier}
                         </Badge>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        <span>Solo Sessions: <span className="font-semibold">{sessionStats?.solo ?? 0}</span></span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <span>Co-op Sessions: <span className="font-semibold">{sessionStats?.coop ?? 0}</span></span>
                     </div>
                 </CardContent>
             </Card>
