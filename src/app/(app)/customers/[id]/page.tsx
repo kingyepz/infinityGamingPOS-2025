@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import CustomerForm, { type CustomerFormData } from '../components/customer-form';
 import { useToast } from "@/hooks/use-toast";
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 
 const fetchCustomerDetails = async (id: string): Promise<Customer> => {
     const supabase = createClient();
@@ -158,6 +158,12 @@ export default function CustomerDetailPage() {
        return <p className="text-center text-muted-foreground py-8">Customer not found.</p>
     }
 
+    // A safer way to parse 'yyyy-MM-dd' to a local Date object.
+    // `new Date('YYYY-MM-DD')` can be interpreted as UTC, causing timezone shifts.
+    // Replacing dashes with slashes is a common JS trick to enforce local time parsing.
+    const customerDob = customer.dob ? new Date(customer.dob.replace(/-/g, '/')) : undefined;
+
+
     return (
         <div className="space-y-6">
             <Button variant="outline" onClick={() => router.push('/customers')}>
@@ -190,7 +196,7 @@ export default function CustomerDetailPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <Cake className="h-5 w-5 text-muted-foreground" />
-                        <span>{customer.dob ? format(parse(customer.dob, 'yyyy-MM-dd', new Date()), 'MMMM do') : 'Birthday not set'}</span>
+                        <span>{customerDob ? format(customerDob, 'MMMM do') : 'Birthday not set'}</span>
                     </div>
                      <div className="flex items-center gap-3">
                         <Star className="h-5 w-5 text-muted-foreground" />
@@ -219,7 +225,7 @@ export default function CustomerDetailPage() {
                             full_name: customer.full_name,
                             phone_number: customer.phone_number,
                             email: customer.email,
-                            dob: customer.dob ? parse(customer.dob, 'yyyy-MM-dd', new Date()) : undefined,
+                            dob: customerDob,
                             loyalty_points: customer.loyalty_points,
                             loyalty_tier: customer.loyalty_tier,
                         }}
