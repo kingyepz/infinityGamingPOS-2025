@@ -32,16 +32,20 @@ const fetchTransactionHistory = async (customerId: string): Promise<LoyaltyTrans
     return data;
 };
 
-const updateCustomer = async (customer: Pick<Customer, 'id' | 'full_name' | 'phone_number' | 'email'> & { dob?: Date | null }) => {
+const updateCustomer = async (customer: { id: string; full_name: string; phone_number: string; email: string; dob?: Date | null }) => {
   const supabase = createClient();
-  const { id, ...updateData } = customer;
-  const payload = {
-      ...updateData,
-      dob: updateData.dob ? updateData.dob.toISOString().split('T')[0] : null
-  };
   
-  // Add count: 'exact' to get the number of updated rows
-  const { error, count } = await supabase.from('customers').update(payload, { count: 'exact' }).eq('id', id);
+  const payload = {
+    full_name: customer.full_name,
+    phone_number: customer.phone_number,
+    email: customer.email,
+    dob: customer.dob ? customer.dob.toISOString().split('T')[0] : null,
+  };
+
+  const { error, count } = await supabase
+    .from('customers')
+    .update(payload, { count: 'exact' })
+    .eq('id', customer.id);
 
   if (error) {
     // If there's a database error, throw it
