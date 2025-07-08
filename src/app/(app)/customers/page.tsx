@@ -61,18 +61,25 @@ const addCustomer = async (customer: AddCustomerPayload) => {
         description: 'Sign-up bonus' 
     }]);
     
-  if (transactionError) {
-    // This is now handled in the mutation's onSuccess to provide user feedback.
-  }
-  
   // Return the customer and a flag indicating if the bonus was awarded
   return { newCustomer, bonusAwarded: !transactionError };
 };
 
 const deleteCustomer = async (customerId: string) => {
   const supabase = createClient();
-  const { error } = await supabase.from('customers').delete().eq('id', customerId);
-  if (error) throw new Error(error.message);
+  // Add count: 'exact' to get the number of deleted rows
+  const { error, count } = await supabase.from('customers').delete({ count: 'exact' }).eq('id', customerId);
+
+  if (error) {
+    // If there's a database error, throw it
+    throw new Error(error.message);
+  }
+
+  if (count === 0) {
+    // If no rows were deleted, it's likely an RLS issue or the record was already gone.
+    // Throw a more specific error to guide the user.
+    throw new Error("Deletion failed. The record may not exist or you may not have permission to delete it. Please check your database's Row Level Security (RLS) policies for the 'customers' table.");
+  }
 };
 
 export default function CustomersPage() {
