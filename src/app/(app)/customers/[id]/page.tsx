@@ -158,10 +158,13 @@ export default function CustomerDetailPage() {
        return <p className="text-center text-muted-foreground py-8">Customer not found.</p>
     }
 
-    // A safer way to parse 'yyyy-MM-dd' to a local Date object.
-    // `new Date('YYYY-MM-DD')` can be interpreted as UTC, causing timezone shifts.
-    // Replacing dashes with slashes is a common JS trick to enforce local time parsing.
-    const customerDob = customer.dob ? new Date(customer.dob.replace(/-/g, '/')) : undefined;
+    // A robust way to parse 'yyyy-MM-dd' to a local Date object, avoiding timezone pitfalls.
+    const parseDateInLocalTime = (dateString: string): Date => {
+        const [year, month, day] = dateString.split('-').map(Number);
+        // Creates a date in the local timezone. Month is 0-indexed in JavaScript's Date constructor.
+        return new Date(year, month - 1, day);
+    };
+    const customerDob = customer.dob ? parseDateInLocalTime(customer.dob) : undefined;
 
 
     return (
