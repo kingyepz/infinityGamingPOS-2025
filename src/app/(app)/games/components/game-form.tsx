@@ -128,6 +128,105 @@ export default function GameForm({ onSubmit, defaultValues, onCancel, isSubmitti
             </FormItem>
           )}
         />
+        
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="genre"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Genre</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <FormControl>
+                      <Input placeholder="e.g. Action RPG" {...field} disabled={isBusy} />
+                    </FormControl>
+                    <Button type="button" variant="outline" size="icon" onClick={handleGenerateGenre} disabled={isBusy} aria-label="Generate genre with AI">
+                      {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="release_date"
+              render={({ field }) => {
+                const [inputValue, setInputValue] = React.useState<string>(
+                  field.value ? format(field.value, 'dd/MM/yyyy') : ''
+                );
+                const [popoverOpen, setPopoverOpen] = React.useState(false);
+
+                React.useEffect(() => {
+                  if (field.value) {
+                    setInputValue(format(field.value, 'dd/MM/yyyy'));
+                  } else {
+                    setInputValue('');
+                  }
+                }, [field.value]);
+                
+                const handleBlur = () => {
+                  const parsedDate = parse(inputValue, 'dd/MM/yyyy', new Date());
+                  if (isValid(parsedDate) && !(parsedDate > new Date() || parsedDate < new Date('1980-01-01'))) {
+                      field.onChange(parsedDate);
+                  } else {
+                      field.onChange(undefined);
+                  }
+                };
+
+                return (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Release Date</FormLabel>
+                    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                      <div className="relative">
+                        <FormControl>
+                          <Input
+                            placeholder="dd/mm/yyyy"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onBlur={handleBlur}
+                            disabled={isBusy}
+                            className="pr-10"
+                          />
+                        </FormControl>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={'ghost'}
+                            size="icon"
+                            className={cn(
+                              'absolute right-0 top-0 h-full w-10 rounded-l-none font-normal',
+                              isBusy && 'opacity-50'
+                            )}
+                            disabled={isBusy}
+                            aria-label="Open calendar"
+                          >
+                            <CalendarIcon className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                      </div>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            setPopoverOpen(false);
+                          }}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date('1980-01-01')
+                          }
+                          initialFocus
+                          defaultMonth={field.value}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
+            />
+        </div>
+        
         <FormField
           control={form.control}
           name="description"
@@ -137,24 +236,6 @@ export default function GameForm({ onSubmit, defaultValues, onCancel, isSubmitti
               <FormControl>
                 <Textarea placeholder="Describe the game..." {...field} disabled={isBusy} className="min-h-[80px]" />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="genre"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Genre</FormLabel>
-              <div className="flex items-center gap-2">
-                <FormControl>
-                  <Input placeholder="e.g. Action RPG" {...field} disabled={isBusy} />
-                </FormControl>
-                <Button type="button" variant="outline" size="icon" onClick={handleGenerateGenre} disabled={isBusy} aria-label="Generate genre with AI">
-                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                </Button>
-              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -258,83 +339,6 @@ export default function GameForm({ onSubmit, defaultValues, onCancel, isSubmitti
                     )}
                   />
               </div>
-              <FormField
-                control={form.control}
-                name="release_date"
-                render={({ field }) => {
-                  const [inputValue, setInputValue] = React.useState<string>(
-                    field.value ? format(field.value, 'dd/MM/yyyy') : ''
-                  );
-                  const [popoverOpen, setPopoverOpen] = React.useState(false);
-
-                  React.useEffect(() => {
-                    if (field.value) {
-                      setInputValue(format(field.value, 'dd/MM/yyyy'));
-                    } else {
-                      setInputValue('');
-                    }
-                  }, [field.value]);
-                  
-                  const handleBlur = () => {
-                    const parsedDate = parse(inputValue, 'dd/MM/yyyy', new Date());
-                    if (isValid(parsedDate) && !(parsedDate > new Date() || parsedDate < new Date('1980-01-01'))) {
-                        field.onChange(parsedDate);
-                    } else {
-                        field.onChange(undefined);
-                    }
-                  };
-
-                  return (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Release Date</FormLabel>
-                      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                        <div className="relative">
-                          <FormControl>
-                            <Input
-                              placeholder="dd/mm/yyyy"
-                              value={inputValue}
-                              onChange={(e) => setInputValue(e.target.value)}
-                              onBlur={handleBlur}
-                              disabled={isBusy}
-                              className="pr-10"
-                            />
-                          </FormControl>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant={'ghost'}
-                              size="icon"
-                              className={cn(
-                                'absolute right-0 top-0 h-full w-10 rounded-l-none font-normal',
-                                isBusy && 'opacity-50'
-                              )}
-                              disabled={isBusy}
-                              aria-label="Open calendar"
-                            >
-                              <CalendarIcon className="h-4 w-4" />
-                            </Button>
-                          </PopoverTrigger>
-                        </div>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={(date) => {
-                              field.onChange(date);
-                              setPopoverOpen(false);
-                            }}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date('1980-01-01')
-                            }
-                            initialFocus
-                            defaultMonth={field.value}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
            </div>
         </div>
 
