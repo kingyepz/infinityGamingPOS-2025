@@ -184,23 +184,55 @@ export default function SessionsPage() {
   });
 
   const endSessionMutation = useMutation({
-    mutationFn: async (params: {paidSession: Session, payer: Payer}) => {
-      const { paidSession } = params;
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('sessions')
-        .update({
-          end_time: paidSession.end_time,
-          duration_minutes: paidSession.duration_minutes,
-          amount_charged: paidSession.amount_charged,
-          points_earned: paidSession.points_earned,
-          payment_status: 'paid',
-          payment_method: paidSession.payment_method,
-          mpesa_reference: paidSession.mpesa_reference,
-        })
-        .eq('id', paidSession.id);
-      if (error) throw new Error(`Could not update session: ${error.message}`);
-      return params;
+    mutationFn: async (params: { paidSession: Session; payer: Payer }) => {
+        const { paidSession } = params;
+        const supabase = createClient();
+
+        // Check for duplicate MPesa reference before processing payment
+        if (paidSession.payment_method === 'mpesa' && paidSession.mpesa_reference) {
+            const referencesToCheck = paidSession.mpesa_reference.split(',').map(ref => ref.trim()).filter(Boolean);
+            
+            // This query finds any paid session that has at least one of the same reference codes.
+            const { data: existingSessions, error: checkError } = await supabase
+                .from('sessions')
+                .select('id, mpesa_reference')
+                .eq('payment_status', 'paid')
+                .not('mpesa_reference', 'is', null);
+
+            if (checkError) {
+                throw new Error(`Database error while checking reference: ${checkError.message}`);
+            }
+
+            if (existingSessions) {
+                const usedReferences = new Set<string>();
+                existingSessions.forEach(session => {
+                    session.mpesa_reference!.split(',').map(ref => ref.trim()).forEach(ref => usedReferences.add(ref));
+                });
+
+                for (const ref of referencesToCheck) {
+                    if (usedReferences.has(ref)) {
+                        // Throw an error if a duplicate is found
+                        throw new Error(`MPesa reference "${ref}" has already been used.`);
+                    }
+                }
+            }
+        }
+    
+        // If the check passes, proceed with updating the session
+        const { error } = await supabase
+            .from('sessions')
+            .update({
+                end_time: paidSession.end_time,
+                duration_minutes: paidSession.duration_minutes,
+                amount_charged: paidSession.amount_charged,
+                points_earned: paidSession.points_earned,
+                payment_status: 'paid',
+                payment_method: paidSession.payment_method,
+                mpesa_reference: paidSession.mpesa_reference,
+            })
+            .eq('id', paidSession.id);
+        if (error) throw new Error(`Could not update session: ${error.message}`);
+        return params;
     },
     onSuccess: async ({ paidSession, payer }) => {
       const supabase = createClient();
@@ -415,6 +447,7 @@ export default function SessionsPage() {
                 onEndSession={handleOpenEndSessionDialog} 
                 onCancelSession={handleCancelSession}
                 userRole={userRole}
+                isEnding={sessionToEnd?.id === session.id && endSessionMutation.isPending}
             />
           ))}
         </div>
