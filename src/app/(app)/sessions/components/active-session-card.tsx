@@ -1,10 +1,9 @@
-
 "use client";
 
 import type { Session } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Clock, Loader2, Gamepad2, Play, Timer, MoreHorizontal, ShieldX } from 'lucide-react';
+import { Users, Clock, Loader2, Gamepad2, Timer, MoreHorizontal, ShieldX, Tag } from 'lucide-react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import React, { useState, useEffect, useRef } from 'react';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
@@ -147,7 +146,7 @@ export default function ActiveSessionCard({ session, onEndSession, onCancelSessi
           <span>{session.game_name || 'No Game Specified'}</span>
         </div>
         <div className="flex items-center text-sm text-foreground/90">
-          <Play className="h-4 w-4 mr-2 text-primary" />
+          <Tag className="h-4 w-4 mr-2 text-primary" />
           <span>Billing: {session.session_type === 'per-hour' ? `${CURRENCY_SYMBOL}${session.rate}/hr` : `${CURRENCY_SYMBOL}${session.rate} (Fixed)`}</span>
         </div>
         <div className="flex items-center text-sm text-foreground/90 font-medium">
