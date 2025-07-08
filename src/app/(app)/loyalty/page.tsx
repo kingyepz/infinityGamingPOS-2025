@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import TierDistributionChart from './components/tier-distribution-chart';
 import LoyaltyCustomersTable from './components/loyalty-customers-table';
+import LoyaltyKpiGrid from './components/loyalty-kpi-grid';
 
 const fetchCustomers = async (): Promise<Customer[]> => {
   const supabase = createClient();
@@ -21,12 +22,34 @@ const fetchCustomers = async (): Promise<Customer[]> => {
   return data;
 };
 
+// Function to fetch all loyalty stats from the new Supabase RPC function
+const fetchLoyaltyStats = async () => {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc('get_loyalty_dashboard_stats');
+  if (error) {
+    console.error("Error fetching loyalty stats via RPC:", error);
+    throw new Error(`Database RPC error: ${error.message}. Please ensure the 'get_loyalty_dashboard_stats' function is created.`);
+  }
+  return data;
+};
+
+
 export default function LoyaltyPage() {
-  const { data: customers, isLoading, isError, error } = useQuery<Customer[]>({
+  const { data: customers, isLoading: isLoadingCustomers, isError: isErrorCustomers, error: customersError } = useQuery<Customer[]>({
     queryKey: ['customers-loyalty'],
     queryFn: fetchCustomers,
     refetchInterval: 30000,
   });
+  
+  const { data: loyaltyStats, isLoading: isLoadingStats, isError: isErrorStats, error: statsError } = useQuery({
+      queryKey: ['loyaltyDashboardStats'],
+      queryFn: fetchLoyaltyStats,
+      refetchInterval: 60000,
+  });
+
+  const isLoading = isLoadingCustomers || isLoadingStats;
+  const isError = isErrorCustomers || isErrorStats;
+  const error = customersError || statsError;
 
   return (
     <div className="space-y-6">
@@ -34,11 +57,15 @@ export default function LoyaltyPage() {
         <Star className="h-8 w-8 text-primary" />
         <div>
           <h2 className="text-2xl font-headline font-semibold">Loyalty Program Dashboard</h2>
-          <p className="text-sm text-muted-foreground">Oversee customer loyalty status and tier distribution.</p>
+          <p className="text-sm text-muted-foreground">Oversee customer loyalty status and program health.</p>
         </div>
       </div>
+      
+      {isError && <p className="text-center text-destructive py-8">Error loading data: {error?.message}</p>}
 
-      {isLoading && (
+      <LoyaltyKpiGrid stats={loyaltyStats} isLoading={isLoadingStats} />
+
+      {isLoading && !loyaltyStats && (
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
@@ -65,8 +92,6 @@ export default function LoyaltyPage() {
         </div>
       )}
 
-      {isError && <p className="text-center text-destructive py-8">Error loading customer data: {error.message}</p>}
-
       {!isLoading && !isError && customers && (
          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <div className="lg:col-span-2">
@@ -91,3 +116,4 @@ export default function LoyaltyPage() {
     </div>
   );
 }
+

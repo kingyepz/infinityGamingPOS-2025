@@ -1,0 +1,94 @@
+
+"use client";
+
+import { StatCard } from '@/components/ui/stat-card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { HelpCircle, Users, TrendingUp, Gift, Repeat, BarChart, Target, Coins } from 'lucide-react';
+import { CURRENCY_SYMBOL } from '@/lib/constants';
+
+interface LoyaltyKpiGridProps {
+  stats: any;
+  isLoading: boolean;
+}
+
+const kpiConfig = [
+  {
+    key: 'activeMembers30',
+    title: 'Active Members (30d)',
+    icon: Users,
+    description: 'Customers active in the last 30 days.',
+    format: (value: number) => value.toLocaleString(),
+  },
+  {
+    key: 'redemptionRate',
+    title: 'Redemption Rate',
+    icon: Target,
+    description: '% of points earned that have been redeemed.',
+    format: (value: number) => `${value.toFixed(1)}%`,
+  },
+  {
+    key: 'avgPointsPerSession',
+    title: 'Avg. Points/Session',
+    icon: BarChart,
+    description: 'Average points awarded per gaming session.',
+    format: (value: number) => `${Math.round(value).toLocaleString()} pts`,
+  },
+  {
+    key: 'signupBonusConversionRate',
+    title: 'Signup Conversion',
+    icon: Repeat,
+    description: '% of sign-up bonus recipients who returned.',
+    format: (value: number) => `${value.toFixed(1)}%`,
+  },
+  {
+    key: 'birthdayUtilizationRate',
+    title: 'Birthday Reward Use',
+    icon: Gift,
+    description: '% of birthday offers that were redeemed.',
+    format: (value: number) => `${value.toFixed(1)}%`,
+  },
+  {
+    key: 'totalPointsOutstanding',
+    title: 'Total Points Outstanding',
+    icon: Coins,
+    description: 'All unredeemed loyalty points in the system.',
+    format: (value: number) => value.toLocaleString(),
+  },
+];
+
+export default function LoyaltyKpiGrid({ stats, isLoading }: LoyaltyKpiGridProps) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+      {kpiConfig.map((kpi) => (
+        <TooltipProvider key={kpi.key}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <StatCard
+                  title={kpi.title}
+                  value={stats ? kpi.format(stats[kpi.key] ?? 0) : '0'}
+                  icon={kpi.icon}
+                  isLoading={isLoading}
+                  description={
+                     <span className="flex items-center text-xs text-muted-foreground">
+                        <HelpCircle className="h-3 w-3 mr-1.5 flex-shrink-0" />
+                        {kpi.description}
+                     </span>
+                  }
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{kpi.description}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ))}
+    </div>
+  );
+}
