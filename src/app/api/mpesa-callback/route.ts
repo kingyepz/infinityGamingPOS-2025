@@ -3,6 +3,16 @@ import { createClient } from '@/lib/supabase/server';
 import { type NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
+    // Optional: simple shared-secret check to reject spoofed callbacks
+    const expected = process.env.MPESA_CALLBACK_SECRET;
+    if (expected) {
+        const provided = req.nextUrl.searchParams.get('secret');
+        if (provided !== expected) {
+            console.warn('Rejected M-Pesa callback: invalid secret');
+            return NextResponse.json({ ResultCode: 1, ResultDesc: "Forbidden" }, { status: 403 });
+        }
+    }
+
     console.log("M-Pesa callback received.");
     const body = await req.json();
 
@@ -24,44 +34,31 @@ export async function POST(req: NextRequest) {
     try {
         const supabase = createClient();
 
-        // Let's find the session using the checkout request ID.
-        // We need a way to store this ID when we initiate the request.
-        // For now, let's assume we can't. We'll use this callback just to update a status.
-        // A better approach is to store checkoutRequestID against the session ID in a temporary table or on the session itself.
-        // For simplicity, we will assume we CAN'T get the session ID easily.
-        // This is a placeholder for a more robust implementation.
+        // Attempt to locate the session that initiated this STK push
+        const { data: session, error: findError } = await supabase
+            .from('sessions')
+            .select('id, amount_charged')
+            .eq('mpesa_checkout_id', checkoutRequestID)
+            .single();
 
-        // --- IDEAL IMPLEMENTATION ---
-        // 1. When you initiate STK push, you save the returned `CheckoutRequestID`
-        //    to the `sessions` table row for that specific session.
-        // 2. In this callback, you use the `CheckoutRequestID` to find the session.
-        //    const { data: session, error } = await supabase.from('sessions').select('*').eq('mpesa_checkout_id', checkoutRequestID).single();
-        
-        // --- SIMPLIFIED (LESS ROBUST) IMPLEMENTATION ---
-        // The client-side will poll for changes. This callback is more of a backup/logging mechanism.
-        
+        if (findError) {
+            console.warn('Callback: could not find session for CheckoutRequestID', checkoutRequestID, findError.message);
+        }
+
         if (resultCode === 0) {
             // Payment was successful
-            const mpesaRef = metadata.find((item: any) => item.Name === 'MpesaReceiptNumber')?.Value;
-            
-            // Here you would find the session and update it.
-            // Since we can't reliably get the session ID here without modifying the table,
-            // the client-side polling will handle the primary update.
-            // This callback can be used for logging or as a backup update mechanism.
-
+            const mpesaRef = metadata?.find((item: any) => item.Name === 'MpesaReceiptNumber')?.Value;
             console.log(`Successful payment. Ref: ${mpesaRef}. CheckoutID: ${checkoutRequestID}.`);
-            // Example update (would require finding the session first):
-            /*
-            await supabase
-                .from('sessions')
-                .update({ 
-                    payment_status: 'paid', 
-                    mpesa_reference: mpesaRef,
-                    end_time: new Date().toISOString() // Or use time from callback
-                })
-                .eq('mpesa_checkout_id', checkoutRequestID); 
-            */
 
+            if (session) {
+                const { error: updateError } = await supabase
+                    .from('sessions')
+                    .update({ payment_status: 'paid', mpesa_reference: mpesaRef || null })
+                    .eq('id', session.id);
+                if (updateError) {
+                    console.error('Failed to update session as paid:', updateError.message);
+                }
+            }
         } else {
             // Payment failed or was cancelled
             const resultDesc = stkCallback.ResultDesc;

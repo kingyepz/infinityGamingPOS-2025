@@ -15,7 +15,9 @@ async function getDarajaToken() {
     
     // The Daraja sandbox and production URLs are different.
     // Ensure you are using the correct one for your environment.
-    const url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
+    const isSandbox = (process.env.MPESA_ENV || 'sandbox') === 'sandbox';
+    const urlBase = isSandbox ? 'https://sandbox.safaricom.co.ke' : 'https://api.safaricom.co.ke';
+    const url = `${urlBase}/oauth/v1/generate?grant_type=client_credentials`;
 
     try {
         const response = await fetch(url, {
@@ -62,14 +64,21 @@ export async function POST(req: NextRequest) {
 
         const token = await getDarajaToken();
         const formattedPhone = formatPhoneNumber(phoneNumber);
-        const timestamp = new Date().toISOString().replace(/[-:.]/g, '').slice(0, 14);
+        const now = new Date();
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`; // YYYYMMDDHHmmss
 
         const passkey = process.env.MPESA_PASSKEY!;
         const shortcode = process.env.MPESA_BUSINESS_SHORTCODE!;
         
         const password = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
         
-        const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/mpesa-callback`;
+        const siteUrl = process.env.MPESA_CALLBACK_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
+        if (!siteUrl) {
+            throw new Error('Callback base URL not set. Configure MPESA_CALLBACK_URL or NEXT_PUBLIC_SITE_URL.');
+        }
+        const secret = process.env.MPESA_CALLBACK_SECRET;
+        const callbackUrl = secret ? `${siteUrl.replace(/\/$/, '')}/api/mpesa-callback?secret=${encodeURIComponent(secret)}` : `${siteUrl.replace(/\/$/, '')}/api/mpesa-callback`;
         
         const stkPayload = {
             BusinessShortCode: shortcode,
@@ -85,7 +94,9 @@ export async function POST(req: NextRequest) {
             TransactionDesc: `Payment for session ${sessionId.slice(0, 6)}`
         };
 
-        const response = await fetch('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', {
+        const isSandbox = (process.env.MPESA_ENV || 'sandbox') === 'sandbox';
+        const baseUrl = isSandbox ? 'https://sandbox.safaricom.co.ke' : 'https://api.safaricom.co.ke';
+        const response = await fetch(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -99,6 +110,22 @@ export async function POST(req: NextRequest) {
         if (!response.ok || (responseData.ResponseCode && responseData.ResponseCode !== '0')) {
             console.error('M-Pesa STK Push error:', responseData);
             throw new Error(responseData.errorMessage || 'M-Pesa request failed.');
+        }
+
+        // Persist CheckoutRequestID to match it on callback
+        try {
+            const checkoutId = responseData.CheckoutRequestID;
+            if (checkoutId) {
+                const { error: updateError } = await supabase
+                    .from('sessions')
+                    .update({ mpesa_checkout_id: checkoutId })
+                    .eq('id', sessionId);
+                if (updateError) {
+                    console.warn('Failed to store mpesa_checkout_id on session:', updateError.message);
+                }
+            }
+        } catch (e) {
+            console.warn('Non-fatal: unable to persist CheckoutRequestID:', e);
         }
 
         return NextResponse.json({ success: true, message: 'STK push initiated.', data: responseData });
