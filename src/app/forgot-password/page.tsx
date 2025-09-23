@@ -21,6 +21,8 @@ const forgotPasswordSchema = z.object({
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
+export const dynamic = 'force-dynamic';
+
 export default function ForgotPasswordPage() {
   const { toast } = useToast();
   const router = useRouter();

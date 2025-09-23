@@ -6,13 +6,18 @@ export function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Check if the environment variables are set. If not, it's a configuration issue.
+  // Be resilient during build/preview: if envs are missing, avoid throwing and
+  // return a client configured with harmless placeholders. Any actual network
+  // call will fail at call time with a descriptive error, but the app can build
+  // and render without crashing.
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "Supabase URL or anonymous key is missing. " +
-      "Please make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your environment variables. " +
-      "If using a local .env file, ensure it's named .env.local and is in the root directory."
-    );
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line no-console
+      console.warn(
+        'Supabase env vars are missing (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY). Using placeholder client; calls will fail at runtime.'
+      );
+    }
+    return createBrowserClient('http://localhost', 'public-anon-key');
   }
 
   // Create a supabase client on the browser with project's credentials

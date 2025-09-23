@@ -9,9 +9,13 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // If Supabase envs are missing, skip auth enforcement to avoid blanket 404/redirect loops in previews
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl ?? 'http://localhost',
+    supabaseAnonKey ?? 'public-anon-key',
     {
       cookies: {
         get(name: string) {
@@ -37,6 +41,10 @@ export async function middleware(request: NextRequest) {
 
   // If not authenticated and not an auth page or API auth route, redirect to login
   if (!isAuthenticated && !authPages.includes(pathname) && !pathname.startsWith('/api/auth')) {
+    // In environments without Supabase envs, do not block access; allow preview
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return response;
+    }
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname); // Preserve intended destination
     return NextResponse.redirect(loginUrl);

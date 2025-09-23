@@ -7,6 +7,8 @@ import ClientToaster from '@/components/client-toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import ReactQueryProvider from '@/components/react-query-provider';
 
+export const dynamic = 'force-dynamic';
+
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",

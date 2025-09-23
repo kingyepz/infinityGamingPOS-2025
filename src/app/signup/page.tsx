@@ -22,6 +22,8 @@ const signUpFormSchema = z.object({
 
 type SignUpFormValues = z.infer<typeof signUpFormSchema>;
 
+export const dynamic = 'force-dynamic';
+
 export default function SignUpPage() {
   const router = useRouter();
   const { toast } = useToast();
