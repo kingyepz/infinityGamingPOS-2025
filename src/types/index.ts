@@ -117,3 +117,56 @@ export interface CustomerOffer {
   used_at?: string | null;
   session_id?: string | null;
 }
+
+export interface InventoryItem {
+  id: string; // uuid
+  name: string;
+  category: 'Snack' | 'Drink' | 'Merchandise' | 'Equipment' | 'Voucher';
+  stock_quantity: number;
+  unit_price: number;
+  cost_price?: number | null;
+  supplier?: string | null;
+  expiry_date?: string | null; // date
+  is_redeemable: boolean;
+  points_required: number;
+  is_vip_only: boolean;
+  is_promo_active: boolean;
+  created_at: string; // timestamptz
+  updated_at: string; // timestamptz
+}
+
+export interface InventoryTransaction {
+  id: string; // uuid
+  item_id: string; // uuid
+  transaction_type: 'sale' | 'restock' | 'adjustment' | 'return' | 'expired';
+  quantity_change: number;
+  quantity_before: number;
+  quantity_after: number;
+  unit_price?: number | null;
+  total_amount?: number | null;
+  session_id?: string | null; // uuid
+  customer_id?: string | null; // uuid
+  payment_method?: 'cash' | 'mpesa' | 'mpesa-stk' | 'loyalty_points' | null;
+  loyalty_points_used?: number;
+  notes?: string | null;
+  recorded_by?: string | null; // uuid
+  created_at: string; // timestamptz
+  
+  // Joined fields for display
+  item_name?: string;
+  customer_name?: string;
+  recorder_name?: string;
+}
+
+export interface InventoryAnalytics {
+  total_items: number;
+  total_value: number;
+  low_stock_count: number;
+  expiring_count: number;
+  promo_items_count: number;
+  top_selling_items: {
+    name: string;
+    total_sold: number;
+    revenue: number;
+  }[];
+}

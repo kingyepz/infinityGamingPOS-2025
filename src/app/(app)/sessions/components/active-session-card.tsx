@@ -4,6 +4,7 @@ import type { Session } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Clock, Loader2, Gamepad2, Timer, MoreHorizontal, ShieldX, Tag } from 'lucide-react';
+import { InventorySalesButton } from './inventory-sales-button';
 import { formatDistanceToNowStrict } from 'date-fns';
 import React, { useState, useEffect, useRef } from 'react';
 import { CURRENCY_SYMBOL } from '@/lib/constants';
@@ -164,8 +165,19 @@ export default function ActiveSessionCard({ session, onEndSession, onCancelSessi
             </div>
         )}
       </CardContent>
-      <CardFooter className="pt-3">
-        <Button onClick={() => onEndSession(session)} className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground" disabled={isEnding}>
+      <CardFooter className="pt-3 flex gap-2">
+        <InventorySalesButton 
+          session={session}
+          customer={{ 
+            id: session.customer_id, 
+            full_name: session.customerName,
+            loyalty_points: 0, // TODO: Fetch actual loyalty points
+            loyalty_tier: 'Bronze' // TODO: Fetch actual tier
+          } as any}
+          size="sm"
+          variant="outline"
+        />
+        <Button onClick={() => onEndSession(session)} className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground" disabled={isEnding}>
           {isEnding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           End Session & Bill
         </Button>
