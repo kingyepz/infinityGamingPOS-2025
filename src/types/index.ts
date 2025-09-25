@@ -16,6 +16,8 @@ export interface Customer {
   isActive?: boolean;
   loyalty_transactions?: LoyaltyTransaction[];
   offers?: CustomerOffer[];
+  // Loyalty and visibility helpers for inventory
+  is_vip?: boolean;
 }
 
 export interface Station {
@@ -75,6 +77,8 @@ export interface Session {
   game_name?: string; // Fetched via join or lookup
   rate: number; // For calculation, not stored directly in DB
   recorderName?: string | null; // Fetched via join on recorded_by
+  // POS cart fields (not stored in DB)
+  cart_items?: SessionCartItem[];
 }
 
 
@@ -116,4 +120,44 @@ export interface CustomerOffer {
   is_used: boolean;
   used_at?: string | null;
   session_id?: string | null;
+}
+
+// --- Inventory ---
+export type InventoryCategory = 'Snack' | 'Drink' | 'Merchandise' | 'Equipment' | 'Voucher';
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: InventoryCategory;
+  stock_quantity: number;
+  unit_price: number;
+  cost_price?: number | null;
+  supplier?: string | null;
+  expiry_date?: string | null; // date string
+  is_redeemable: boolean;
+  points_required: number; // numeric
+  is_vip_only: boolean;
+  is_promo_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InventoryChangeType = 'add' | 'sale' | 'adjustment' | 'redeem';
+
+export interface InventoryTransaction {
+  id: string;
+  item_id: string;
+  change_type: InventoryChangeType;
+  quantity_change: number; // positive for stock in, negative for out
+  unit_price_at_time?: number | null;
+  session_id?: string | null;
+  payer_customer_id?: string | null;
+  notes?: string | null;
+  created_at: string;
+  created_by?: string | null;
+}
+
+export interface SessionCartItem {
+  item: InventoryItem;
+  quantity: number;
 }
