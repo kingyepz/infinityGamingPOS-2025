@@ -18,8 +18,13 @@ CREATE TABLE IF NOT EXISTS public.users (
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 -- ================================
--- 3. CREATE RLS POLICIES FOR USERS TABLE
+-- 3. CREATE RLS POLICIES FOR USERS TABLE (SAFE MODE)
 -- ================================
+
+-- Drop existing policies if they exist, then recreate them
+DROP POLICY IF EXISTS "Allow authenticated users to read their own user record" ON public.users;
+DROP POLICY IF EXISTS "Allow authenticated users to update their own record" ON public.users;
+DROP POLICY IF EXISTS "Allow service role full access to users" ON public.users;
 
 -- Allow authenticated users to read their own user record
 CREATE POLICY "Allow authenticated users to read their own user record" 
@@ -152,8 +157,20 @@ ALTER TABLE public.loyalty_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customer_offers ENABLE ROW LEVEL SECURITY;
 
 -- ================================
--- 9. CREATE BASIC RLS POLICIES FOR OTHER TABLES
+-- 9. CREATE BASIC RLS POLICIES FOR OTHER TABLES (SAFE MODE)
 -- ================================
+
+-- Drop existing policies if they exist, then recreate them
+DROP POLICY IF EXISTS "Allow authenticated users to read customers" ON public.customers;
+DROP POLICY IF EXISTS "Allow authenticated users to manage customers" ON public.customers;
+DROP POLICY IF EXISTS "Allow authenticated users to read sessions" ON public.sessions;
+DROP POLICY IF EXISTS "Allow authenticated users to manage sessions" ON public.sessions;
+DROP POLICY IF EXISTS "Allow authenticated users to read stations" ON public.stations;
+DROP POLICY IF EXISTS "Allow authenticated users to manage stations" ON public.stations;
+DROP POLICY IF EXISTS "Allow authenticated users to read loyalty_transactions" ON public.loyalty_transactions;
+DROP POLICY IF EXISTS "Allow authenticated users to manage loyalty_transactions" ON public.loyalty_transactions;
+DROP POLICY IF EXISTS "Allow authenticated users to read customer_offers" ON public.customer_offers;
+DROP POLICY IF EXISTS "Allow authenticated users to manage customer_offers" ON public.customer_offers;
 
 -- Allow authenticated users to read all data (adjust as needed for your security requirements)
 CREATE POLICY "Allow authenticated users to read customers" ON public.customers FOR SELECT TO authenticated USING (true);
