@@ -117,3 +117,65 @@ export interface CustomerOffer {
   used_at?: string | null;
   session_id?: string | null;
 }
+
+export interface InventoryItem {
+  id: string; // UUID, primary key
+  name: string; // text
+  category: 'Snack' | 'Drink' | 'Merchandise' | 'Equipment' | 'Voucher'; // text
+  stock_quantity: number; // integer
+  unit_price: number; // numeric
+  cost_price?: number | null; // numeric, optional
+  supplier?: string | null; // text, optional
+  expiry_date?: string | null; // date, optional
+  is_redeemable: boolean; // boolean
+  points_required: number; // numeric
+  is_vip_only: boolean; // boolean
+  is_promo_active: boolean; // boolean
+  created_at: string; // timestamptz
+  updated_at: string; // timestamptz
+  // Computed fields for UI
+  stock_value?: number; // unit_price * stock_quantity
+  is_low_stock?: boolean; // stock_quantity < 5
+  days_to_expiry?: number | null; // calculated from expiry_date
+}
+
+export interface InventoryTransaction {
+  id: string; // uuid
+  inventory_item_id: string; // uuid
+  transaction_type: 'sale' | 'restock' | 'adjustment' | 'return'; // text
+  quantity_change: number; // integer (positive for restock, negative for sale)
+  previous_quantity: number; // integer
+  new_quantity: number; // integer
+  unit_price?: number | null; // numeric
+  total_amount?: number | null; // numeric
+  session_id?: string | null; // uuid (if part of a session sale)
+  customer_id?: string | null; // uuid (if customer involved)
+  payment_method?: 'cash' | 'mpesa' | 'points' | null; // text
+  notes?: string | null; // text
+  recorded_by?: string | null; // uuid of user who recorded the transaction
+  created_at: string; // timestamptz
+  // Joined fields
+  item_name?: string; // from inventory_items join
+  customer_name?: string; // from customers join
+  session_duration?: number; // from sessions join
+}
+
+export interface InventoryStats {
+  total_items: number;
+  total_stock_value: number;
+  low_stock_items: number;
+  expiring_items: number;
+  total_transactions_today: number;
+  revenue_today: number;
+  top_selling_items: Array<{
+    item_id: string;
+    item_name: string;
+    quantity_sold: number;
+    revenue: number;
+  }>;
+  category_breakdown: Array<{
+    category: string;
+    item_count: number;
+    stock_value: number;
+  }>;
+}
