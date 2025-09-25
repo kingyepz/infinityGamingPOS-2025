@@ -43,7 +43,7 @@ const navItems = [
   { href: '/games', label: 'Games', icon: Album, roles: ['admin', 'supervisor'] },
   { href: '/payments', label: 'Payments', icon: CreditCard, roles: ['admin', 'cashier', 'supervisor'] },
   { href: '/loyalty', label: 'Loyalty Program', icon: Star, roles: ['admin', 'supervisor'] },
-  { href: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'supervisor'], comingSoon: true },
+  { href: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'supervisor'] },
   { href: '/tournaments', label: 'Tournaments', icon: Trophy, roles: ['admin', 'supervisor'], comingSoon: true },
   { href: '/support', label: 'AI Support', icon: BrainCircuit, roles: ['admin', 'cashier', 'supervisor'] },
   { href: '/users', label: 'User Management', icon: CircleUser, roles: ['admin'], comingSoon: true },
