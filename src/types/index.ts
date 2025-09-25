@@ -117,3 +117,40 @@ export interface CustomerOffer {
   used_at?: string | null;
   session_id?: string | null;
 }
+
+// --- Inventory ---
+export type InventoryCategory = 'Snack' | 'Drink' | 'Merchandise' | 'Equipment' | 'Voucher';
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: InventoryCategory;
+  stock_quantity: number;
+  unit_price: number;
+  cost_price?: number | null;
+  supplier?: string | null;
+  expiry_date?: string | null; // date string (YYYY-MM-DD)
+  is_redeemable: boolean;
+  points_required: number;
+  is_vip_only: boolean;
+  is_promo_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InventoryTransactionType = 'restock' | 'sale' | 'adjustment' | 'redeem';
+export type InventoryPaymentMethod = 'cash' | 'mpesa' | 'split' | null;
+
+export interface InventoryTransaction {
+  id: string;
+  item_id: string;
+  transaction_type: InventoryTransactionType;
+  change_quantity: number;
+  unit_price?: number | null;
+  total_amount?: number | null;
+  payment_method?: InventoryPaymentMethod;
+  session_id?: string | null;
+  customer_id?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
