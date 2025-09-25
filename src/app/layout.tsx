@@ -1,7 +1,7 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-import { Inter as FontSans } from "next/font/google"
+import { Inter as FontSans, Roboto, Montserrat, Source_Code_Pro } from "next/font/google"
 import { cn } from "@/lib/utils"
 import ClientToaster from '@/components/client-toaster';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -12,6 +12,24 @@ export const dynamic = 'force-dynamic';
 const fontSans = FontSans({
   subsets: ["latin"],
   variable: "--font-sans",
+})
+
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-body",
+})
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["400", "500", "700", "800"],
+  variable: "--font-headline",
+})
+
+const sourceCodePro = Source_Code_Pro({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-code",
 })
 
 export const metadata: Metadata = {
@@ -27,17 +45,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
-      </head>
       <body
         className={cn(
           "min-h-screen bg-background font-body antialiased",
-          fontSans.variable
+          fontSans.variable,
+          roboto.variable,
+          montserrat.variable,
+          sourceCodePro.variable
         )}
       >
         <ReactQueryProvider>
