@@ -1,0 +1,100 @@
+Tech Stack: Next.js frontend, Supabase backend
+Goal: Build a full-featured inventory management system integrated with the POS, sessions, and loyalty points.
+
+Requirements:
+
+Inventory Items Table (inventory_items)
+
+Fields:
+
+id (UUID, primary key)
+
+name (text)
+
+category (text: Snack, Drink, Merchandise, Equipment, Voucher)
+
+stock_quantity (integer)
+
+unit_price (numeric)
+
+cost_price (numeric, optional)
+
+supplier (text, optional)
+
+expiry_date (date, optional)
+
+is_redeemable (boolean)
+
+points_required (numeric)
+
+is_vip_only (boolean)
+
+is_promo_active (boolean)
+
+CRUD operations: add, view, edit, delete
+
+Stock Tracking
+
+Track real-time stock levels when items are sold or restocked
+
+Prevent sales if stock is insufficient
+
+Optional: trigger alerts for low stock
+
+Sales Integration
+
+Items can be sold via POS during game sessions
+
+Supports payment methods: Cash, M-Pesa, Split Payment
+
+Automatically reduces stock upon sale
+
+Award loyalty points if applicable
+
+Promotions & Rewards
+
+Highlight promo items (is_promo_active)
+
+Allow items to be redeemed with loyalty points
+
+VIP-only items visible only to VIP loyalty tier customers
+
+Reporting & Analytics
+
+Track most sold items
+
+Track stock value (unit price × quantity)
+
+Identify items nearing expiry
+
+Export inventory data (CSV/Excel)
+
+Frontend Requirements (Next.js)
+
+Inventory Dashboard Page (/dashboard/inventory)
+
+Table listing all items with search/filter
+
+Sortable columns: name, category, stock, promo status
+
+Quick actions: Add Stock, Edit Item, Delete Item
+
+Color-coded badges for stock alerts (e.g., red if <5 units)
+
+Integrate loyalty redemption for items redeemable via points
+
+Supabase Integration
+
+Use Supabase for storing inventory_items and inventory_transactions
+
+Log all stock adjustments (additions, sales, adjustments) in inventory_transactions
+
+Link item sales to transactions and update session_payers if part of a session sale
+
+Optional Features (Future Consideration)
+
+Automatic low-stock notifications
+
+Integration with supplier data for auto-reordering
+
+Dashboard charts: Top-selling items, inventory value, promo redemption stats
