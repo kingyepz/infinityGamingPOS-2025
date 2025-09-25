@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack --hostname 0.0.0.0 --port 5000",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --hostname 0.0.0.0 --port 5000",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
