@@ -117,3 +117,32 @@ export interface CustomerOffer {
   used_at?: string | null;
   session_id?: string | null;
 }
+
+export interface InventoryItem {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  category: 'Snack' | 'Drink' | 'Merchandise' | 'Equipment' | 'Voucher';
+  stock_quantity: number;
+  unit_price: number;
+  cost_price?: number | null;
+  supplier?: string | null;
+  expiry_date?: string | null;
+  is_redeemable: boolean;
+  points_required: number;
+  is_vip_only: boolean;
+  is_promo_active: boolean;
+}
+
+export interface InventoryTransaction {
+  id: string;
+  created_at: string;
+  item_id: string;
+  quantity: number; // always positive; sign encoded by transaction_type
+  transaction_type: 'restock' | 'sale' | 'adjustment' | 'redeem';
+  unit_price?: number | null;
+  note?: string | null;
+  session_id?: string | null;
+  customer_id?: string | null;
+}

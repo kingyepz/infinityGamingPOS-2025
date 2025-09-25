@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { DollarSign, Gamepad2, Users, Timer, Wallet, Star, UserPlus } from 'lucide-react';
 import { StatCard } from '@/components/ui/stat-card';
 import { WelcomeHeader } from './components/WelcomeHeader';
+import Link from 'next/link';
 import { QuickActions } from './components/QuickActions';
 import { RevenueTrendChart } from './components/RevenueTrendChart';
 import { HourlyActivityChart } from './components/HourlyActivityChart';
@@ -120,6 +121,9 @@ export default function DashboardPage() {
       </div>
 
       <QuickActions />
+      <div className="mt-2">
+        <Link href="/dashboard/inventory" className="text-sm text-primary underline">Manage Inventory</Link>
+      </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
