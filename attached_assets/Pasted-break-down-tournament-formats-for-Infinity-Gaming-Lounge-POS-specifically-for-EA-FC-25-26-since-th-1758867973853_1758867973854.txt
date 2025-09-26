@@ -1,0 +1,115 @@
+break down tournament formats for Infinity Gaming Lounge POS, specifically for EA FC 25/26, since those games are very tournament-friendly.
+
+⚽ Tournament Formats (EA FC 25/26)
+1️⃣ Knockout (Single Elimination)
+
+How it works:
+
+Players are paired into matches.
+
+The loser is eliminated immediately.
+
+The winner advances to the next round.
+
+Continues until one winner remains.
+
+Example:
+
+8 players → Quarterfinals → Semifinals → Final → Winner.
+
+Implementation:
+
+tournament_matches table stores matchups (player1_id, player2_id, winner_id, round).
+
+Auto-generate bracket after registration closes.
+
+After each result entry, system automatically pairs winners for the next round.
+
+Best for:
+Quick, exciting tournaments (popular in gaming lounges).
+
+2️⃣ Round Robin (Future)
+
+How it works:
+
+Every player plays against every other player once.
+
+Points awarded (Win = 3, Draw = 1, Loss = 0).
+
+Leaderboard ranks players by total points (goal difference can be tie-breaker).
+
+Example:
+
+6 players → each plays 5 matches.
+
+Implementation:
+
+tournament_matches generates all possible player pairings.
+
+After results, update tournament_standings with accumulated points, goals scored/conceded.
+
+Best for:
+Smaller groups, fair competition where luck of knockout bracket doesn’t decide too early.
+
+3️⃣ Group Stage + Knockout (Future)
+
+How it works:
+
+Players divided into groups (e.g., 4 groups of 4 players).
+
+Group stage played as round robin.
+
+Top 1–2 from each group advance to knockout stage.
+
+Knockout proceeds as usual until a champion is crowned.
+
+Example:
+
+16 players → 4 groups of 4 → top 2 from each group → 8-player knockout.
+
+Implementation:
+
+Phase 1: Round robin within each group (group_id in tournament_players).
+
+Phase 2: Advance qualifiers into knockout bracket.
+
+Best for:
+Larger tournaments, balances fairness (group stage) with excitement (knockout).
+
+🛠️ Building This in EA FC 25/26 Context
+
+Why EA FC 25/26?
+
+The game supports custom tournaments with brackets, making it easy for staff to mirror in POS.
+
+Matches are relatively short (10–15 mins), good for both knockout and group formats.
+
+Scores are easy to log (goals, winner, loser).
+
+Steps for POS Implementation:
+
+Tournament Creation
+
+Staff chooses format: knockout, round_robin, or group+knockout.
+
+System generates initial matches accordingly.
+
+Match Handling
+
+Staff records scores manually (POS doesn’t pull live game data).
+
+System updates winner/points based on format logic.
+
+Advancement
+
+Knockout → advance winners.
+
+Round robin → update standings table.
+
+Group + knockout → qualify top players per group.
+
+Leaderboard
+
+Each format updates a tournament_standings view.
+
+POS can display standings on lounge TV/projector (future add-on).
