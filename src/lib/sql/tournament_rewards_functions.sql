@@ -194,14 +194,19 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION award_specific_reward(reward_uuid UUID)
 RETURNS VOID AS $$
 DECLARE
+    aux_rec RECORD;
     reward_rec RECORD;
     customer_id_to_update UUID;
 BEGIN
-    -- Get reward info
-    SELECT tr.*, tp.customer_id INTO reward_rec, customer_id_to_update
+    -- Get reward info using auxiliary record first
+    SELECT tr.*, tp.customer_id INTO aux_rec
     FROM public.tournament_rewards tr
     JOIN public.tournament_participants tp ON tr.participant_id = tp.id
     WHERE tr.id = reward_uuid;
+    
+    -- Extract individual fields from auxiliary record
+    reward_rec := aux_rec;
+    customer_id_to_update := aux_rec.customer_id;
     
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Reward not found';

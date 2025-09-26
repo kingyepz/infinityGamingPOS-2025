@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tournament, TournamentReward } from '@/types';
-import { useTournamentRewards } from '../hooks/use-tournament-rewards';
+import { useTournamentRewards } from '../../hooks/use-tournament-rewards';
 
 interface TournamentRewardsProps {
   tournament: Tournament;
