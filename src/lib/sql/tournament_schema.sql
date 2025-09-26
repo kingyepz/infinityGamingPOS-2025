@@ -336,7 +336,7 @@ BEGIN
         INSERT INTO public.loyalty_transactions (
             customer_id, transaction_type, points, description, created_at
         ) VALUES (
-            participant_customer_id, 'earned', points_to_award, transaction_description, NOW()
+            participant_customer_id, 'earn', points_to_award, transaction_description, NOW()
         );
         
         -- Update customer loyalty points
@@ -381,7 +381,7 @@ BEGIN
     WHERE tournament_id = tournament_uuid AND status = 'active';
     
     -- Calculate number of rounds needed
-    round_count := CEIL(LOG(2, participant_count));
+    round_count := CEIL(LOG(participant_count) / LOG(2));
     
     -- Update tournament with total rounds
     UPDATE public.tournaments 
