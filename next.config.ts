@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   allowedDevOrigins: [
-    '1054cf8b-b5c5-477b-b86d-cba7f1167be8-00-3igtk5tecx9h0.riker.replit.dev'
+    '000d201c-cc4e-4193-9338-45e7617aaf05-00-xvs4jxi1c7am.kirk.replit.dev'
   ],
   images: {
     remotePatterns: [
