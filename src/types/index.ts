@@ -117,3 +117,119 @@ export interface CustomerOffer {
   used_at?: string | null;
   session_id?: string | null;
 }
+
+// Tournament System Types
+export interface Tournament {
+  id: string;
+  title: string;
+  game_id: string | null;
+  platform: 'PC' | 'PlayStation' | 'Xbox' | 'Nintendo' | 'VR';
+  format: 'knockout' | 'round_robin' | 'group_knockout';
+  status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  start_date: string;
+  end_date?: string | null;
+  max_players: number;
+  current_players: number;
+  entry_fee: number;
+  prize_type: 'cash' | 'free_sessions' | 'loyalty_points' | 'merchandise' | 'mixed';
+  prize_value: number;
+  prize_description?: string | null;
+  current_round: number;
+  total_rounds: number;
+  description?: string | null;
+  rules?: any; // JSONB
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  game_name?: string;
+  game_title?: string;
+  creator_name?: string;
+}
+
+export interface TournamentParticipant {
+  id: string;
+  tournament_id: string;
+  customer_id: string;
+  team_name?: string | null;
+  group_id?: number | null;
+  registration_date: string;
+  entry_fee_paid: boolean;
+  payment_method?: 'cash' | 'mpesa' | 'loyalty_points' | null;
+  seed_position?: number | null;
+  status: 'active' | 'eliminated' | 'disqualified' | 'withdrew';
+  notes?: string | null;
+  created_at: string;
+  // Joined fields
+  customer_name: string;
+  customer_phone: string;
+}
+
+export interface TournamentMatch {
+  id: string;
+  tournament_id: string;
+  round: number;
+  match_number: number;
+  stage: 'group' | 'knockout' | 'final';
+  group_id?: number | null;
+  participant1_id: string;
+  participant2_id: string;
+  station_id?: string | null;
+  scheduled_time?: string | null;
+  actual_start_time?: string | null;
+  actual_end_time?: string | null;
+  status: 'scheduled' | 'ongoing' | 'completed' | 'no_show' | 'cancelled';
+  winner_id?: string | null;
+  participant1_score: number;
+  participant2_score: number;
+  match_details?: any; // JSONB
+  notes?: string | null;
+  recorded_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  participant1_name: string;
+  participant2_name: string;
+  station_name?: string | null;
+  winner_name?: string | null;
+}
+
+export interface TournamentStanding {
+  id: string;
+  tournament_id: string;
+  participant_id: string;
+  group_id?: number | null;
+  matches_played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  points: number;
+  goals_for: number;
+  goals_against: number;
+  goal_difference: number;
+  position?: number | null;
+  is_qualified: boolean;
+  updated_at: string;
+  // Joined fields
+  participant_name: string;
+  customer_name: string;
+}
+
+export interface TournamentReward {
+  id: string;
+  tournament_id: string;
+  participant_id: string;
+  position: number;
+  position_name: string;
+  reward_type: 'cash' | 'free_sessions' | 'loyalty_points' | 'merchandise';
+  reward_value: number;
+  reward_description?: string | null;
+  is_awarded: boolean;
+  awarded_at?: string | null;
+  awarded_by?: string | null;
+  loyalty_transaction_id?: string | null;
+  created_at: string;
+  // Joined fields
+  participant_name: string;
+  customer_name: string;
+}

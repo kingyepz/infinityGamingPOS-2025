@@ -1,0 +1,125 @@
+build tournament support in Infinity Gaming Lounge POS, focusing on EAFC 25/26 tournaments, here’s a breakdown of how to handle Round Robin and Group + Knockout formats, and what the build should look like:
+
+🎮 Tournament Formats
+1. Round Robin
+
+Every player/team plays against every other player/team once.
+
+Points system:
+
+Win = 3 points
+
+Draw = 1 point
+
+Loss = 0 points
+
+Standings table automatically updates (Wins, Losses, Draws, Goals For, Goals Against, Goal Difference, Points).
+
+At the end: the player/team with the highest points wins, or top X advance to finals if needed.
+
+2. Group + Knockout (Champions League Style)
+
+Group Stage:
+
+Players/teams are divided into groups (e.g., 4 players per group).
+
+Round Robin inside each group.
+
+Top 1 or 2 advance.
+
+Knockout Stage:
+
+Single elimination bracket (Quarterfinals → Semifinals → Final).
+
+Option to add a 3rd place playoff.
+
+Matches tracked until one champion remains.
+
+⚙️ Build Requirements
+1. Tournament Creation
+
+Fields:
+
+Tournament Name
+
+Game Title (EAFC25 / EAFC26)
+
+Format (Round Robin / Group + Knockout)
+
+Max Participants
+
+Entry Fee (optional)
+
+Prize Info
+
+2. Player/Team Registration
+
+Add customer(s) from existing database.
+
+Assign them to groups (if group stage).
+
+Option to auto-generate fixtures.
+
+3. Match Management
+
+Enter scores for each match.
+
+Auto-update standings (for Round Robin & Group Stage).
+
+Generate bracket automatically (for Knockouts).
+
+4. Live Dashboard
+
+Show:
+
+Fixtures (upcoming matches)
+
+Live standings (points table)
+
+Bracket visualization for Knockouts
+
+Highlight champions at the end.
+
+5. Rewards Integration
+
+Link to Loyalty Program:
+
+Award extra points for participation.
+
+Bigger points for winners/finalists.
+
+📊 Database (Supabase) Tables
+
+tournaments
+
+id, name, game, format, max_participants, status (upcoming, live, completed), prize, entry_fee
+
+tournament_participants
+
+id, tournament_id, customer_id, team_name
+
+tournament_matches
+
+id, tournament_id, round, home_participant, away_participant, home_score, away_score, status
+
+tournament_groups (if group stage)
+
+id, tournament_id, group_name, participant_id
+
+tournament_brackets
+
+id, tournament_id, round, participant_id, match_id, next_match_id
+
+⚡ Build Flow Example:
+
+Admin creates tournament → selects EAFC26 → Group + Knockout → 16 players.
+
+System auto-creates 4 groups of 4 players each.
+
+Group matches are played, scores entered → table updates.
+
+Top 2 per group advance to Quarterfinals.
+
+Bracket auto-generated → admin enters scores → semifinals → finals.
+
+Champion declared → reward distributed (points/free games).
