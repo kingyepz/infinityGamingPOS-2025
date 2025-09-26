@@ -78,14 +78,6 @@ export interface Session {
 }
 
 
-export interface SupportTicket {
-  id: string;
-  query: string;
-  category?: string;
-  confidence?: number;
-  createdAt: Date;
-  status: 'new' | 'categorized' | 'resolved';
-}
 
 export interface Staff {
     id: string;

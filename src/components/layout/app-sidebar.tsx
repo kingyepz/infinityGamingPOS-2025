@@ -16,7 +16,6 @@ import {
   LayoutDashboard, 
   Users, 
   Gamepad2 as GamepadIcon,
-  BrainCircuit,
   Timer,
   Album,
   CreditCard,
@@ -45,7 +44,6 @@ const navItems = [
   { href: '/loyalty', label: 'Loyalty Program', icon: Star, roles: ['admin', 'supervisor'] },
   { href: '/inventory', label: 'Inventory', icon: Warehouse, roles: ['admin', 'supervisor'] },
   { href: '/tournaments', label: 'Tournaments', icon: Trophy, roles: ['admin', 'supervisor'] },
-  { href: '/support', label: 'AI Support', icon: BrainCircuit, roles: ['admin', 'cashier', 'supervisor'] },
   { href: '/users', label: 'User Management', icon: CircleUser, roles: ['admin'], comingSoon: true },
   { href: '/settings', label: 'Settings', icon: Settings, roles: ['admin'], comingSoon: true },
 ];
