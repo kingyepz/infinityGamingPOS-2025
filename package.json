@@ -1,6 +1,7 @@
 {
-  "name": "nextn",
-  "version": "0.1.0",
+  "name": "infinity-gaming-pos",
+  "version": "1.0.0",
+  "description": "A comprehensive Point of Sale and management system designed for gaming lounges and eSports centers",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack --hostname 0.0.0.0 --port 5000",

@@ -408,6 +408,153 @@ INSERT INTO public.inventory_items (name, category, stock_quantity, unit_price, 
 ON CONFLICT DO NOTHING;
 
 -- ================================
+-- 12. TOURNAMENT SYSTEM TABLES
+-- ================================
+
+-- Tournaments table
+CREATE TABLE IF NOT EXISTS public.tournaments (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title TEXT NOT NULL,
+    game_id UUID REFERENCES public.games(id) ON DELETE SET NULL,
+    platform TEXT NOT NULL CHECK (platform IN ('PC', 'PlayStation', 'Xbox', 'Nintendo', 'VR')),
+    format TEXT NOT NULL CHECK (format IN ('knockout', 'round_robin', 'group_knockout')) DEFAULT 'knockout',
+    status TEXT NOT NULL CHECK (status IN ('upcoming', 'ongoing', 'completed', 'cancelled')) DEFAULT 'upcoming',
+    start_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    end_date TIMESTAMP WITH TIME ZONE,
+    max_players INTEGER NOT NULL CHECK (max_players > 0) DEFAULT 8,
+    current_players INTEGER DEFAULT 0 CHECK (current_players >= 0),
+    entry_fee NUMERIC(10,2) DEFAULT 0 CHECK (entry_fee >= 0),
+    prize_type TEXT NOT NULL CHECK (prize_type IN ('cash', 'free_sessions', 'loyalty_points', 'merchandise', 'mixed')),
+    prize_value NUMERIC(10,2) DEFAULT 0 CHECK (prize_value >= 0),
+    prize_description TEXT,
+    current_round INTEGER DEFAULT 0,
+    total_rounds INTEGER DEFAULT 0,
+    description TEXT,
+    rules JSONB,
+    created_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tournament participants table
+CREATE TABLE IF NOT EXISTS public.tournament_participants (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    tournament_id UUID REFERENCES public.tournaments(id) ON DELETE CASCADE,
+    customer_id UUID REFERENCES public.customers(id) ON DELETE CASCADE,
+    team_name TEXT,
+    group_id INTEGER,
+    registration_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    entry_fee_paid BOOLEAN DEFAULT FALSE,
+    payment_method TEXT CHECK (payment_method IN ('cash', 'mpesa', 'loyalty_points')),
+    seed_position INTEGER,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'eliminated', 'disqualified', 'withdrew')),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(tournament_id, customer_id)
+);
+
+-- Tournament matches table
+CREATE TABLE IF NOT EXISTS public.tournament_matches (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    tournament_id UUID REFERENCES public.tournaments(id) ON DELETE CASCADE,
+    round INTEGER NOT NULL CHECK (round > 0),
+    match_number INTEGER NOT NULL,
+    stage TEXT NOT NULL CHECK (stage IN ('group', 'knockout', 'final')),
+    group_id INTEGER,
+    participant1_id UUID REFERENCES public.tournament_participants(id) ON DELETE CASCADE,
+    participant2_id UUID REFERENCES public.tournament_participants(id) ON DELETE CASCADE,
+    station_id UUID REFERENCES public.stations(id) ON DELETE SET NULL,
+    scheduled_time TIMESTAMP WITH TIME ZONE,
+    actual_start_time TIMESTAMP WITH TIME ZONE,
+    actual_end_time TIMESTAMP WITH TIME ZONE,
+    status TEXT DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'ongoing', 'completed', 'no_show', 'cancelled')),
+    winner_id UUID REFERENCES public.tournament_participants(id) ON DELETE SET NULL,
+    participant1_score INTEGER DEFAULT 0,
+    participant2_score INTEGER DEFAULT 0,
+    match_details JSONB,
+    notes TEXT,
+    recorded_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tournament standings table
+CREATE TABLE IF NOT EXISTS public.tournament_standings (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    tournament_id UUID REFERENCES public.tournaments(id) ON DELETE CASCADE,
+    participant_id UUID REFERENCES public.tournament_participants(id) ON DELETE CASCADE,
+    group_id INTEGER,
+    matches_played INTEGER DEFAULT 0,
+    wins INTEGER DEFAULT 0,
+    draws INTEGER DEFAULT 0,
+    losses INTEGER DEFAULT 0,
+    points INTEGER DEFAULT 0,
+    goals_for INTEGER DEFAULT 0,
+    goals_against INTEGER DEFAULT 0,
+    goal_difference INTEGER GENERATED ALWAYS AS (goals_for - goals_against) STORED,
+    position INTEGER,
+    is_qualified BOOLEAN DEFAULT FALSE,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(tournament_id, participant_id, group_id)
+);
+
+-- Tournament rewards table
+CREATE TABLE IF NOT EXISTS public.tournament_rewards (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    tournament_id UUID REFERENCES public.tournaments(id) ON DELETE CASCADE,
+    participant_id UUID REFERENCES public.tournament_participants(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL CHECK (position > 0),
+    position_name TEXT NOT NULL,
+    reward_type TEXT NOT NULL CHECK (reward_type IN ('cash', 'free_sessions', 'loyalty_points', 'merchandise')),
+    reward_value NUMERIC(10,2) NOT NULL CHECK (reward_value >= 0),
+    reward_description TEXT,
+    is_awarded BOOLEAN DEFAULT FALSE,
+    awarded_at TIMESTAMP WITH TIME ZONE,
+    awarded_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
+    loyalty_transaction_id UUID REFERENCES public.loyalty_transactions(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for tournament tables
+ALTER TABLE public.tournaments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tournament_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tournament_matches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tournament_standings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tournament_rewards ENABLE ROW LEVEL SECURITY;
+
+-- Tournament policies
+CREATE POLICY "Allow authenticated users to read tournaments" ON public.tournaments FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow admins and supervisors to manage tournaments" ON public.tournaments FOR ALL TO authenticated USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'supervisor'))
+);
+
+CREATE POLICY "Allow authenticated users to read tournament participants" ON public.tournament_participants FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow staff to manage tournament participants" ON public.tournament_participants FOR ALL TO authenticated USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'supervisor', 'cashier'))
+);
+
+CREATE POLICY "Allow authenticated users to read tournament matches" ON public.tournament_matches FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow staff to manage tournament matches" ON public.tournament_matches FOR ALL TO authenticated USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'supervisor', 'cashier'))
+);
+
+CREATE POLICY "Allow authenticated users to read tournament standings" ON public.tournament_standings FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow staff to manage tournament standings" ON public.tournament_standings FOR ALL TO authenticated USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'supervisor', 'cashier'))
+);
+
+CREATE POLICY "Allow authenticated users to read tournament rewards" ON public.tournament_rewards FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Allow admins and supervisors to manage tournament rewards" ON public.tournament_rewards FOR ALL TO authenticated USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('admin', 'supervisor'))
+);
+
+-- Insert sample tournament data
+INSERT INTO public.tournaments (title, game_id, platform, format, status, start_date, max_players, entry_fee, prize_type, prize_value, prize_description, description) VALUES
+('Weekly FIFA Tournament', (SELECT id FROM public.games WHERE title ILIKE '%FIFA%' LIMIT 1), 'PlayStation', 'knockout', 'upcoming', NOW() + INTERVAL '2 days', 16, 500.00, 'cash', 5000.00, 'Cash prizes for top 3', 'Weekly competitive FIFA tournament'),
+('VR Championship', (SELECT id FROM public.games WHERE title ILIKE '%Beat Saber%' OR title ILIKE '%Half-Life%' LIMIT 1), 'VR', 'knockout', 'upcoming', NOW() + INTERVAL '1 week', 8, 300.00, 'loyalty_points', 1000.00, 'Loyalty points for winners', 'VR gaming championship')
+ON CONFLICT DO NOTHING;
+
+-- ================================
 -- SETUP COMPLETE!
 -- ================================
 -- Your database is now fully configured with:
@@ -416,6 +563,7 @@ ON CONFLICT DO NOTHING;
 -- ✓ Customer management and loyalty system
 -- ✓ Session management and payments
 -- ✓ Complete inventory management system
+-- ✓ Tournament system with full bracket management
 -- ✓ All RLS policies and security
 -- ✓ Utility functions and triggers
 -- ✓ Sample data for testing

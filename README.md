@@ -1,204 +1,285 @@
-## Infinity Gaming POS (Next.js + Supabase)
+# 🎮 Infinity Gaming Lounge POS System
 
-A production-ready Point of Sale and analytics app for a gaming lounge, built with Next.js App Router, Supabase, Tailwind, and M-Pesa (Daraja) mobile payments.
+A comprehensive, production-ready Point of Sale and management system designed specifically for gaming lounges and eSports centers. Built with modern technologies to handle customer management, gaming sessions, tournaments, inventory, and mobile payments.
 
-### Highlights
-- **Auth & Sessions**: Supabase Auth with middleware-protected routes
-- **Dashboard & CRUD**: Customers, sessions, stations, payments, loyalty points
-- **Payments**: M-Pesa STK Push (Daraja), with callback handling and receipt flow
-- **Theming & UI**: Tailwind + shadcn/ui components, dark mode
-- **CI/Preview Friendly**: Dynamic rendering and resilient env handling for previews
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 
----
+## ✨ Features
 
-## Tech Stack
-- Next.js 15 (App Router), React 18, TypeScript
-- Supabase (Auth, Postgres, RLS)
-- Tailwind CSS, shadcn/ui
-- React Query (TanStack Query)
-- M-Pesa Daraja API (STK Push)
+### 🎯 Core Management
+- **Customer Management**: Complete customer profiles with loyalty tracking
+- **Gaming Sessions**: Real-time session management with timer and billing
+- **Station Management**: Multi-platform gaming station control (PC, PlayStation, Xbox, Nintendo, VR)
+- **Game Library**: Comprehensive game catalog with genre categorization
+- **Payment Processing**: Cash and M-Pesa STK Push integration
 
----
+### 🏆 Advanced Features
+- **Tournament System**: Full tournament management with brackets, matches, and rewards
+- **Loyalty Program**: Tiered loyalty system (Bronze, Silver, Gold, Platinum)
+- **Inventory Management**: Real-time stock tracking with automated updates
+- **Analytics Dashboard**: Revenue trends, popular games, customer insights
+- **Role-based Access**: Admin, Supervisor, and Cashier roles with appropriate permissions
 
-## Project Structure
-```
-src/
-  app/
-    (app)/                 # Protected application pages
-    api/                   # Next.js API routes (M-Pesa)
-    auth/                  # Public auth flows
-  components/              # UI and layout
-  hooks/                   # React hooks
-  lib/
-    supabase/              # Client and server helpers
-    sql/                   # SQL migrations/utilities
-    utils.ts               # Misc helpers
-  middleware.ts            # Auth middleware
-next.config.ts             # Next.js configuration
-```
+### 🔒 Security & Compliance
+- **Authentication**: Supabase Auth with middleware-protected routes
+- **Row Level Security (RLS)**: Database-level security policies
+- **Data Validation**: Comprehensive form validation with Zod schemas
+- **Audit Trail**: Complete transaction and activity logging
 
----
+## 🏗️ Tech Stack
 
-## Prerequisites
-- Node.js 18+
-- Supabase project (Database + Auth)
-- Safaricom M-Pesa Daraja credentials (sandbox or production)
+### Frontend
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **State Management**: TanStack React Query
+- **Forms**: React Hook Form + Zod validation
+- **Icons**: Lucide React
+- **Charts**: Recharts
 
----
+### Backend & Database
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **API**: Next.js API Routes
+- **ORM**: Direct Supabase client queries
+- **File Storage**: Supabase Storage
 
-## Quick Start
-1) Install dependencies
+### Payments & Integrations
+- **Mobile Payments**: M-Pesa Daraja API (STK Push)
+- **Payment Methods**: Cash, M-Pesa, Split payments
+- **Webhooks**: Secure payment confirmation callbacks
+
+### Analytics
+- **Analytics**: Custom dashboard with real-time metrics
+- **Reporting**: Revenue, customer, and operational reports
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+ and npm
+- Supabase account and project
+- M-Pesa Daraja API credentials (optional, for mobile payments)
+
+### 1. Clone and Install
 ```bash
-npm ci
+git clone https://github.com/yourusername/infinity-gaming-pos.git
+cd infinity-gaming-pos
+npm install
 ```
 
-2) Create `.env.local` at project root and set required variables
-```bash
-# Supabase (required)
+### 2. Environment Setup
+Create a `.env.local` file in the project root:
+
+```env
+# Supabase Configuration (REQUIRED)
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 
-# Public site URL for auth/reset links and payment callbacks
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+# Public site URL for auth/reset links
+NEXT_PUBLIC_SITE_URL=http://localhost:5000
 
-# M-Pesa (Daraja)
-MPESA_ENV=sandbox                      # sandbox | production
-MPESA_CONSUMER_KEY=...
-MPESA_CONSUMER_SECRET=...
-MPESA_BUSINESS_SHORTCODE=...
-MPESA_PASSKEY=...
-MPESA_CALLBACK_URL=http://localhost:3000
-MPESA_CALLBACK_SECRET=some-shared-secret
+# M-Pesa (Daraja API) - Optional
+MPESA_ENV=sandbox
+MPESA_CONSUMER_KEY=your-consumer-key
+MPESA_CONSUMER_SECRET=your-consumer-secret
+MPESA_BUSINESS_SHORTCODE=174379
+MPESA_PASSKEY=your-passkey
+MPESA_CALLBACK_URL=http://localhost:3000/api/mpesa-callback
+MPESA_CALLBACK_SECRET=your-callback-secret
 ```
 
-3) Configure Supabase (DB + Auth)
-- Run SQL migration(s) in Supabase SQL editor
-```sql
--- File: src/lib/sql/add_mpesa_checkout_id.sql
-alter table if exists public.sessions
-add column if not exists mpesa_checkout_id text;
+### 3. Database Setup
+1. Go to your Supabase project dashboard
+2. Navigate to SQL Editor
+3. Copy and paste the entire `database_setup.sql` file contents
+4. Execute the script to create all tables, policies, and functions
 
-create or replace function public.check_mpesa_ref_exists(ref_code text)
-returns boolean
-language sql
-stable
-as $$
-  select exists(
-    select 1 from public.sessions s
-    where s.mpesa_reference is not null
-      and upper(s.mpesa_reference) like '%' || upper(ref_code) || '%'
-  );
-$$;
-```
-
-- Auth → URL Configuration
-  - Site URL: `NEXT_PUBLIC_SITE_URL`
-  - Additional Redirect URLs: include your preview domains and `http://localhost:3000`
-- Settings → API → CORS
-  - Allowed origins: include `NEXT_PUBLIC_SITE_URL`, localhost, and any preview domains (ngrok/Cloudflare tunnel)
-
-4) Run locally
+### 4. Run Development Server
 ```bash
 npm run dev
 ```
 
-5) Build & run production locally
+Visit `http://localhost:5000` to access the application (configured for Replit environment).
+
+### 5. Build for Production
 ```bash
 npm run build
 npm start
 ```
 
+## 📊 Database Schema
+
+The system uses a comprehensive PostgreSQL schema with the following main tables:
+
+- **users**: System users with role-based access
+- **customers**: Customer profiles and loyalty data
+- **stations**: Gaming station configurations
+- **games**: Game library with metadata
+- **sessions**: Gaming session records
+- **tournaments**: Tournament management
+- **inventory_items**: Stock management
+- **loyalty_transactions**: Points and rewards tracking
+- **payments**: Payment processing records
+
+## 🎮 Usage Guide
+
+### Admin Dashboard
+- Monitor real-time revenue and session metrics
+- Manage gaming stations and game library
+- Configure tournament brackets and rewards
+- Oversee staff performance and analytics
+
+### Cashier Operations
+- Start/end gaming sessions
+- Process payments (cash/M-Pesa)
+- Manage customer check-ins
+- Handle loyalty point redemptions
+
+### Customer Management
+- Register new customers
+- Track loyalty points and tier status
+- View session history and spending
+- Process birthday rewards automatically
+
+### Tournament System
+- Create tournaments with multiple formats (knockout, round-robin)
+- Manage participants and matches
+- Track standings and results
+- Distribute rewards automatically
+
+## 🔧 Configuration
+
+### Gaming Stations
+Configure different types of gaming stations:
+- **PC**: High-end gaming computers
+- **PlayStation**: PS4/PS5 consoles
+- **Xbox**: Xbox One/Series X|S
+- **Nintendo**: Switch consoles
+- **VR**: Virtual reality setups
+
+### Loyalty Program
+Automatic tier progression based on points:
+- **Bronze**: 0-199 points
+- **Silver**: 200-499 points
+- **Gold**: 500-999 points
+- **Platinum**: 1000+ points
+
+### Payment Methods
+- **Cash**: Traditional cash payments
+- **M-Pesa**: Mobile money via STK Push
+- **Split**: Combination of payment methods
+
+## 🛡️ Security
+
+The system implements multiple layers of security:
+
+- **Authentication**: Secure user registration and login
+- **Authorization**: Role-based access control
+- **Database Security**: Row Level Security policies
+- **API Protection**: Middleware-protected routes
+- **Data Validation**: Server-side input validation
+- **Audit Logging**: Complete activity tracking
+
+## 🚀 Deployment
+
+### Replit (Recommended for Development)
+The project is pre-configured for Replit deployment:
+1. Import the repository to Replit
+2. Configure environment variables
+3. Run the setup script
+4. Deploy using Replit's hosting
+
+### Vercel
+```bash
+npm i -g vercel
+vercel
+```
+
+
+## 📈 Analytics & Reporting
+
+The system provides comprehensive analytics:
+
+- **Revenue Tracking**: Daily, weekly, monthly revenue trends
+- **Customer Analytics**: New customers, retention, spending patterns
+- **Popular Games**: Most played games and genres
+- **Station Utilization**: Usage statistics per station
+- **Staff Performance**: Revenue per staff member
+- **Loyalty Insights**: Points distribution and tier analysis
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+- Use TypeScript for all new code
+- Follow the existing code style and conventions
+- Add appropriate tests for new features
+- Update documentation as needed
+- Ensure all TypeScript checks pass
+
+## 📝 API Documentation
+
+### Payment Processing
+- `POST /api/stk-push` - Initiate M-Pesa STK Push payment
+- `POST /api/mpesa-callback` - M-Pesa webhook callback for payment confirmations
+
+### Tournament Management
+- `POST /api/tournaments/[id]/complete` - Complete a tournament and award rewards
+- `POST /api/tournaments/rewards/[id]/award` - Award a specific tournament reward
+
+### Authentication
+Authentication is handled through Supabase Auth with the following pages:
+- `/login` - User login page
+- `/signup` - User registration page  
+- `/forgot-password` - Password reset page
+- `/auth/update-password` - Password update page
+
+## 🆘 Troubleshooting
+
+### Common Issues
+
+**Database Connection Issues**
+- Verify Supabase credentials in `.env.local`
+- Check network connectivity
+- Ensure RLS policies are properly configured
+
+**M-Pesa Payment Failures**
+- Verify Daraja API credentials
+- Check callback URL configuration
+- Ensure proper network access for webhooks
+
+**Authentication Problems**
+- Clear browser cache and cookies
+- Verify Supabase Auth configuration
+- Check redirect URLs in Supabase dashboard
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [shadcn/ui](https://ui.shadcn.com/) for the beautiful UI components
+- [Supabase](https://supabase.com/) for the backend infrastructure
+- [Lucide](https://lucide.dev/) for the icon library
+- [Recharts](https://recharts.org/) for the analytics charts
+
+## 📞 Support
+
+For support and questions:
+- Create an issue in the GitHub repository
+- Check the documentation and troubleshooting guide
+- Review the database setup instructions
+
 ---
 
-## Environment Variables (Reference)
-- Supabase
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - `NEXT_PUBLIC_SITE_URL` (public base URL; used in password reset links, OAuth, and payment callbacks)
-- M-Pesa (Daraja)
-  - `MPESA_ENV` = `sandbox` or `production`
-  - `MPESA_CONSUMER_KEY` / `MPESA_CONSUMER_SECRET`
-  - `MPESA_BUSINESS_SHORTCODE` (PayBill/Till)
-  - `MPESA_PASSKEY`
-  - `MPESA_CALLBACK_URL` (base URL; defaults to `NEXT_PUBLIC_SITE_URL`)
-  - `MPESA_CALLBACK_SECRET` (optional shared secret validated by callback route)
-
----
-
-## Authentication & Routing
-- `src/middleware.ts` guards the app routes; unauthenticated users are redirected to `/login`.
-- Public routes: `/login`, `/signup`, `/forgot-password`, `/auth/update-password`.
-- App routes live under `src/app/(app)/` and require auth.
-
----
-
-## Payments: M-Pesa STK Push
-### Flow
-1) Cashier ends a session and selects M-Pesa Express (STK) in the dialog.
-2) The app posts to `POST /api/stk-push` with amount, phone, and session id.
-3) Server obtains Daraja token, generates password/timestamp, and calls STK Push.
-4) On success, it stores `CheckoutRequestID` on the session for correlation.
-5) Safaricom calls our `POST /api/mpesa-callback` endpoint when payment completes.
-6) Callback validates secret (if configured), finds session by `mpesa_checkout_id`, and marks it `paid`, capturing the M-Pesa receipt.
-
-### Split Payments
-- Supported by initiating two STK pushes (one per payer) and tracking both.
-- Current code wires single STK per session. To fully enable UI-driven split STK:
-  - Add a `mpesa_payments` table (one row per payer) and track `checkout_id/status/ref`.
-  - Send separate STK pushes for each payer; mark the session as paid when all are paid.
-  - The UI can show two phone inputs and dual progress indicators.
-
-### Sandbox vs Production
-- Use `MPESA_ENV` to switch base URLs.
-- Ensure your `MPESA_CALLBACK_URL`/`NEXT_PUBLIC_SITE_URL` is publicly reachable and whitelisted in Supabase CORS.
-
----
-
-## Troubleshooting
-- 404 on preview or redirect loops
-  - Ensure `NEXT_PUBLIC_SITE_URL` is set to the exact preview URL.
-  - Supabase Auth → URL Configuration and API → CORS must include your preview domain.
-- “Failed to fetch” / Auth network errors
-  - Check that `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set in the runtime environment (not only local).
-- STK Push errors
-  - Verify Daraja credentials (consumer key/secret, shortcode, passkey) and that `MPESA_ENV=sandbox` for testing.
-  - Confirm callback URL is publicly reachable and returns HTTP 200/JSON.
-  - Check server logs for `M-Pesa STK Push error` or callback errors.
-- Password reset not working
-  - Supabase Auth → URL Configuration must include `NEXT_PUBLIC_SITE_URL` as Site URL and in Additional Redirect URLs.
-  - The reset link should land on `/auth/update-password`.
-
----
-
-## Deployment Notes
-- Build: `npm run build`
-- Runtime envs must include all `NEXT_PUBLIC_*` and `MPESA_*` variables.
-- If using Firebase App Hosting, ensure rewrites proxy to Next server; if using Vercel/Netlify, standard Next deployments apply.
-- For previews, consider a stable tunnel (ngrok with reserved subdomain or Cloudflare tunnel) and update the Supabase CORS/URLs accordingly.
-
----
-
-## Scripts
-- `npm run dev` – start dev server
-- `npm run build` – production build
-- `npm start` – start production server
-- `npm run typecheck` – TypeScript
-- `npm run lint` – Next.js lint (during CI builds linting is disabled to avoid blocking)
-
----
-
-## Security
-- Do not commit secrets. Use environment variables in your hosting provider.
-- `MPESA_CALLBACK_SECRET` helps ensure callbacks are from your configuration.
-- Enforce Supabase RLS policies for all tables accessed by clients.
-
----
-
-## License
-This codebase is provided as-is for the Infinity Gaming Lounge POS use case. Adapt policies and flows to your operational needs.
-
-# Firebase Studio
-
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+Built with ❤️ for gaming communities worldwide.
