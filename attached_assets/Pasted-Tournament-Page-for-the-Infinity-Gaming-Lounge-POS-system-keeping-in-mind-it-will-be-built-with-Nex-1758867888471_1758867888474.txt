@@ -1,0 +1,159 @@
+Tournament Page for the Infinity Gaming Lounge POS system, keeping in mind it will be built with Next.js + Supabase:
+
+🏆 Tournament Page – Infinity Gaming Lounge
+Purpose
+
+The Tournament Page allows staff (Admin/Staff) to organize, manage, and track tournaments for various games. Customers can be registered into brackets, results can be recorded, and winners can be rewarded with prizes or loyalty points.
+
+Core Features
+1️⃣ Tournament Setup
+
+Create New Tournament
+
+Fields:
+
+id (UUID, primary key)
+
+title (text, e.g., "EA FC 25 Weekend Cup")
+
+game_title (FK from games table)
+
+platform (PS5, Xbox Series X, PC)
+
+start_date / end_date (timestamps)
+
+entry_fee (KES, optional)
+
+max_players (integer)
+
+prize_type (cash, free sessions, loyalty points, merch)
+
+status (upcoming, ongoing, completed)
+
+Tournament formats:
+
+Knockout (single-elimination)
+
+Round-robin (future consideration)
+
+Group stage + knockout (future consideration)
+
+2️⃣ Player Registration
+
+Add Players
+
+By selecting from existing customers
+
+By manual entry (guest players)
+
+Track Paid Entries
+
+If entry fee is required, link payment (cash, M-Pesa, loyalty points)
+
+Limit registration based on max_players
+
+3️⃣ Match Management
+
+Generate Match Brackets
+
+Auto-generate knockout brackets based on player list
+
+Staff can override/edit pairings
+
+Record Results
+
+Enter winner and score per match
+
+Automatically advance winner to next round
+
+Live Status
+
+Track ongoing and completed matches
+
+4️⃣ Rewards & Points
+
+Assign Rewards
+
+Award loyalty points automatically to top positions (e.g., Winner: 200 pts, Runner-up: 100 pts)
+
+Record cash or voucher prizes
+
+Update Customer Profiles
+
+Winners’ loyalty points added to their account
+
+Trophies/Badges (future feature)
+
+5️⃣ Analytics & History
+
+Tournament History
+
+List of past tournaments with winners
+
+Leaderboard
+
+Ranking of top players by:
+
+Wins
+
+Participation count
+
+Loyalty points earned from tournaments
+
+UI / UX Design
+
+Tournament Dashboard (/dashboard/tournaments)
+
+Card/grid layout of all tournaments (Upcoming, Ongoing, Completed)
+
+Each card shows:
+
+Title + Game + Start Date
+
+Current status badge
+
+of players registered
+
+Tournament Detail Page
+
+Bracket view (tree-style, knockout visualization)
+
+Match results input form
+
+Player list with payment/registration status
+
+Reward section
+
+Supabase Tables
+
+tournaments
+
+Tournament metadata (title, game, dates, prize)
+
+tournament_players
+
+Links players/customers to tournaments
+
+Tracks entry fee status
+
+tournament_matches
+
+Stores match pairings, scores, results
+
+tournament_rewards
+
+Records rewards/prizes distributed
+
+Example Workflow
+
+Admin creates “FIFA 25 Saturday Knockout” tournament.
+
+Customers register & pay entry fees.
+
+System auto-generates brackets.
+
+Staff record match results as games are played.
+
+Winners get prizes + loyalty points.
+
+Tournament is archived in history & leaderboards updated.
